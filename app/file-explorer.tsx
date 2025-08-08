@@ -393,7 +393,6 @@ export default function FileExplorerScreen() {
           return `recording-${item.data.id}`;
         }}
         extraData={folders} // Ensure FlatList re-renders when folders change
-        extraData={items} // Ensure FlatList re-renders when items (folders/recordings) change
         getItemLayout={(data, index) => {
           // Estimate item heights for virtualization
           const item = data?.[index];
