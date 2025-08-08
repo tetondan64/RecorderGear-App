@@ -17,7 +17,6 @@ import { useAudioPlayer } from '@/hooks/useAudioPlayer';
 import { useFolderChildren } from '@/hooks/useFolderChildren';
 import { TranscriptService } from '@/services/transcriptService';
 import { RecordingsStore } from '@/data/recordingsStore';
-import { RecordingsStore } from '@/data/recordingsStore';
 
 export default function FileExplorerScreen() {
   const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
