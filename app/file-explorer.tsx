@@ -194,7 +194,7 @@ export default function FileExplorerScreen() {
       
       // Ensure fresh data after create attempt
       setTimeout(() => {
-        refresh();
+        refreshFolders();
       }, 100);
     }
   };
