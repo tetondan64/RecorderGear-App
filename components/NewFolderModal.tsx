@@ -8,7 +8,7 @@ interface NewFolderModalProps {
   visible: boolean;
   onConfirm: (folderName: string) => Promise<void>;
   onCancel: () => void;
-  isCreating?: boolean;
+  isCreating?: boolean; // Renamed from isSubmitting to match common usage
 }
 
 export default function NewFolderModal({
@@ -16,7 +16,7 @@ export default function NewFolderModal({
   onConfirm,
   onCancel,
   isCreating = false,
-}: NewFolderModalProps) {
+}: NewFolderModalProps) { // Renamed isSubmitting to isCreating
   const [folderName, setFolderName] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);

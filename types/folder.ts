@@ -14,13 +14,15 @@ export interface FolderFilter {
 }
 
 export interface FolderEvent {
-  type: 'folders_changed';
+  type: 'folders_changed' | 'folders_local_reconcile';
   payload: {
-    op: 'create' | 'rename' | 'move' | 'delete';
-    id: string;
+    op?: 'create' | 'rename' | 'move' | 'delete'; // Made optional for local_reconcile
+    id?: string; // Made optional for local_reconcile
     parentId?: string | null;
-    name?: string;
+    name?: string; // Made optional for local_reconcile
     timestamp: number;
-    version: number;
+    version?: number; // Made optional as local_reconcile might not have it
+    tempId?: string; // New field for folders_local_reconcile
+    real?: Folder; // New field for folders_local_reconcile
   };
 }

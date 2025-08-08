@@ -17,6 +17,7 @@ import { useAudioPlayer } from '@/hooks/useAudioPlayer';
 import { useFolderChildren } from '@/hooks/useFolderChildren';
 import { TranscriptService } from '@/services/transcriptService';
 import { RecordingsStore } from '@/data/recordingsStore';
+import { RecordingsStore } from '@/data/recordingsStore';
 
 export default function FileExplorerScreen() {
   const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
@@ -35,7 +36,7 @@ export default function FileExplorerScreen() {
     loading: foldersLoading,
     error: foldersError,
     refetch: refreshFolders,
-    addOptimisticFolder,
+    addOptimisticFolder, // Keep this for adding the temp folder
     replaceOptimisticFolder,
     removeOptimisticFolder,
   } = useFolderChildren(currentFolderId);
@@ -190,6 +191,17 @@ export default function FileExplorerScreen() {
           name: newFolder.name,
           tempId: optimisticTempId 
         });
+
+        // Emit local reconcile event for immediate UI update
+        if (optimisticTempId) {
+          RecordingsStore.notifyStoreChanged(false, {
+            type: 'folders_local_reconcile',
+            payload: {
+              tempId: optimisticTempId,
+              real: newFolder, // Pass the full newFolder object
+            },
+          });
+        }
       }
       
       // Clear watchdog timers on success
@@ -382,6 +394,7 @@ export default function FileExplorerScreen() {
           return `recording-${item.data.id}`;
         }}
         extraData={folders} // Ensure FlatList re-renders when folders change
+        extraData={items} // Ensure FlatList re-renders when items (folders/recordings) change
         getItemLayout={(data, index) => {
           // Estimate item heights for virtualization
           const item = data?.[index];

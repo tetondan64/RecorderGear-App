@@ -244,8 +244,8 @@ const styles = StyleSheet.create({
   },
   pendingIndicator: {
     position: 'absolute',
-    top: -2,
-    right: -2,
+    top: 0,
+    right: 0,
     width: 12,
     height: 12,
     borderRadius: 6,

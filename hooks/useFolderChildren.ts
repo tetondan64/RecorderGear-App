@@ -157,6 +157,10 @@ export function useFolderChildren(parentId: string | null): UseFolderChildrenRes
     ));
   }, []);
 
+  // Add items to dependency array for handleFolderEvent
+  // This is crucial for the optimisticItem lookup within the event handler
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+
   const handleFolderEvent = useCallback((event?: FolderEvent) => {
     if (!event) {
       if (process.env.NODE_ENV !== 'production') {
@@ -164,6 +168,16 @@ export function useFolderChildren(parentId: string | null): UseFolderChildrenRes
       }
       debouncedRefetch();
       return;
+    }
+
+    // Handle local reconcile event
+    if (event.type === 'folders_local_reconcile' && event.payload.tempId && event.payload.real) {
+      if (process.env.NODE_ENV !== 'production') {
+        console.log('local:reconcile', { tempId: event.payload.tempId, realId: event.payload.real.id });
+      }
+      // Use the explicit replaceOptimisticFolder for local reconciliation
+      replaceOptimisticFolder(event.payload.tempId, event.payload.real as FolderWithCounts);
+      return; // Handled, no further action for this event
     }
 
     const { op, id, parentId: eventParentId } = event.payload;
@@ -205,7 +219,7 @@ export function useFolderChildren(parentId: string | null): UseFolderChildrenRes
       
       debouncedRefetch();
     }
-  }, [parentId, items, debouncedRefetch]);
+  }, [parentId, items, debouncedRefetch, replaceOptimisticFolder]);
 
   // Subscribe to folder events
   useEffect(() => {
