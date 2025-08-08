@@ -138,9 +138,7 @@ export default function FileExplorerScreen() {
           <Text style={styles.headerTitle}>File Explorer</Text>
           <TouchableOpacity 
             style={styles.addButton}
-            onPress={() => {
-              // This will be handled by the FileExplorerContent component
-            }}
+            onPress={() => { /* handled by FileExplorerContent */ }}
           >
             <Plus size={20} color="#f4ad3d" strokeWidth={1.5} />
           </TouchableOpacity>
