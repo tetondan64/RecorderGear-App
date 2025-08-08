@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, TextInput, Modal } from 'reac
 import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
 import { X, Folder } from 'lucide-react-native';
+import { useFolderExplorer } from '@/context/FolderExplorerContext';
 
 interface NewFolderModalProps {
   visible: boolean;
@@ -21,6 +22,7 @@ export default function NewFolderModal({
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const inputRef = useRef<TextInput>(null);
+  const { parentId, addOptimisticFolder } = useFolderExplorer();
 
   useEffect(() => {
     if (visible) {
