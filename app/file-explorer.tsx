@@ -16,6 +16,9 @@ export default function FileExplorerScreen() {
   const [recordings, setRecordings] = useState<AudioFile[]>([]);
   const [recordingsLoading, setRecordingsLoading] = useState(true);
   const [pathLoading, setPathLoading] = useState(true);
+  const [folderPath, setFolderPath] = useState([]);
+  const [snackbarMessage, setSnackbarMessage] = useState('');
+  const [snackbarVisible, setSnackbarVisible] = useState(false);
   
   const adapter = FoldersAdapter.getInstance();
 
@@ -34,7 +37,8 @@ export default function FileExplorerScreen() {
     }, [currentFolderId]) // Depend on currentFolderId
   );
 
-  const loadRecordings = async () => {
+  const loadRecordingsAndPath = async () => {
+    try {
       setPathLoading(true);
       
       console.log('🔍 FileExplorer: Starting to load folder content for:', currentFolderId);
@@ -42,6 +46,7 @@ export default function FileExplorerScreen() {
       // Load recordings and path for current location
       const [recordingsData, pathData] = await Promise.all([
         adapter.getRecordingsInFolder(currentFolderId),
+        adapter.getFolderPath(currentFolderId)
       ]);
       
       console.log('🔍 FileExplorer: Loaded data:', {
@@ -53,6 +58,24 @@ export default function FileExplorerScreen() {
     } catch (error) {
       console.error('Failed to load folder content:', error);
       Alert.alert('Error', 'Failed to load folder content');
+    } finally {
+      setRecordingsLoading(false);
+      setPathLoading(false);
+    }
+  };
+
+  const loadRecordings = async () => {
+    try {
+      setRecordingsLoading(true);
+      const recordingsData = await adapter.getRecordingsInFolder(currentFolderId);
+      setRecordings(recordingsData);
+    } catch (error) {
+      console.error('Failed to load recordings:', error);
+      Alert.alert('Error', 'Failed to load recordings');
+    } finally {
+      setRecordingsLoading(false);
+    }
+  };
 
   const showSnackbar = (message: string) => {
     setSnackbarMessage(message);
