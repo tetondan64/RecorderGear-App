@@ -81,6 +81,8 @@ export default function FileExplorerScreen() {
     let totalMs = 0;
     let success = false;
     let watchdogTimeout: NodeJS.Timeout | null = null;
+  };
+
   const renderBreadcrumbs = () => {
     const breadcrumbs = [
       { id: null, name: 'Root' },
@@ -123,46 +125,47 @@ export default function FileExplorerScreen() {
   };
 
   const renderContent = () => {
-  return (
-    <Layout>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity 
-          style={styles.backButton} 
-          onPress={() => router.back()}
-        >
-          <ArrowLeft size={24} color="#FFFFFF" strokeWidth={1.5} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>File Explorer</Text>
-        <TouchableOpacity 
-          style={styles.addButton}
-          onPress={() => {
-            // This will be handled by the FileExplorerContent component
-          }}
-            // This will be handled by the FileExplorerContent component
-          }}
-        >
-          <Plus size={20} color="#f4ad3d" strokeWidth={1.5} />
-        </TouchableOpacity>
-      </View>
+    return (
+      <Layout>
+        {/* Header */}
+        <View style={styles.header}>
+          <TouchableOpacity 
+            style={styles.backButton} 
+            onPress={() => router.back()}
+          >
+            <ArrowLeft size={24} color="#FFFFFF" strokeWidth={1.5} />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>File Explorer</Text>
+          <TouchableOpacity 
+            style={styles.addButton}
+            onPress={() => {
+              // This will be handled by the FileExplorerContent component
+            }}
+          >
+            <Plus size={20} color="#f4ad3d" strokeWidth={1.5} />
+          </TouchableOpacity>
+        </View>
 
-      {/* Breadcrumbs */}
-      {renderBreadcrumbs()}
+        {/* Breadcrumbs */}
+        {renderBreadcrumbs()}
 
-      {/* Content */}
-      <View style={styles.contentContainer}>
-        <FolderExplorerProvider parentId={currentFolderId}>
-          <FileExplorerContent
-            recordings={recordings}
-            recordingsLoading={recordingsLoading}
-            pathLoading={pathLoading}
-            currentFolderId={currentFolderId}
-            onFolderPress={(folder) => setCurrentFolderId(folder.id)}
-          />
-        </FolderExplorerProvider>
-      </View>
-    </Layout>
-  );
+        {/* Content */}
+        <View style={styles.contentContainer}>
+          <FolderExplorerProvider parentId={currentFolderId}>
+            <FileExplorerContent
+              recordings={recordings}
+              recordingsLoading={recordingsLoading}
+              pathLoading={pathLoading}
+              currentFolderId={currentFolderId}
+              onFolderPress={(folder) => setCurrentFolderId(folder.id)}
+            />
+          </FolderExplorerProvider>
+        </View>
+      </Layout>
+    );
+  };
+
+  return renderContent();
 }
 
 const styles = StyleSheet.create({
