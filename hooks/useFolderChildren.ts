@@ -5,59 +5,104 @@ import { FoldersAdapter, FolderEvent, FolderWithCounts } from '@/services/folder
 interface OptimisticFolder extends Folder {
   tempId: string;
   pending: true;
+  subfolderCount: number;
+  recordingCount: number;
 }
 
+type FolderItem = FolderWithCounts | OptimisticFolder;
+
 interface UseFolderChildrenResult {
-  folders: (FolderWithCounts | OptimisticFolder)[];
+  items: FolderItem[];
   loading: boolean;
   error: string | null;
-  refresh: () => Promise<void>;
+  refetch: () => Promise<void>;
   addOptimisticFolder: (name: string) => string;
+  replaceOptimisticFolder: (tempId: string, realFolder: FolderWithCounts) => void;
   removeOptimisticFolder: (tempId: string) => void;
 }
 
 export function useFolderChildren(parentId: string | null): UseFolderChildrenResult {
-  const [persistedFolders, setPersistedFolders] = useState<FolderWithCounts[]>([]);
-  const [optimisticFolders, setOptimisticFolders] = useState<OptimisticFolder[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [items, setItems] = useState<FolderItem[]>([]);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   
   const adapter = FoldersAdapter.getInstance();
-  const refreshTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const tempIdToFinalIdMap = useRef<Map<string, string>>(new Map());
+  const refetchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const isMountedRef = useRef(true);
 
   const generateTempId = (): string => {
     return `tmp-${Date.now()}-${Math.random().toString(36).substring(2, 15)}`;
   };
 
-  const refresh = useCallback(async () => {
+  const normalizeString = (str: string): string => {
+    return str.trim().toLowerCase();
+  };
+
+  const refetch = useCallback(async () => {
+    if (!isMountedRef.current) return;
+    
     try {
       setLoading(true);
       setError(null);
       
-      console.log('🔄 useFolderChildren: Refreshing folders for parentId:', parentId);
-      const foldersWithCounts = await adapter.listChildren(parentId);
-      console.log('🔄 useFolderChildren: Loaded folders:', foldersWithCounts.length);
+      if (process.env.NODE_ENV !== 'production') {
+        console.log('🔄 useFolderChildren: Refetching folders for parentId:', parentId);
+      }
       
-      setPersistedFolders(foldersWithCounts);
+      const foldersWithCounts = await adapter.listChildren(parentId);
+      
+      if (!isMountedRef.current) return;
+      
+      // Reconcile with optimistic items
+      setItems(prevItems => {
+        const optimisticItems = prevItems.filter(item => 'pending' in item && item.pending);
+        const realFolders = foldersWithCounts;
+        
+        // Remove optimistic items that now exist as real folders
+        const reconciledOptimistic = optimisticItems.filter(optimistic => {
+          const matchingReal = realFolders.find(real => 
+            normalizeString(real.name) === normalizeString(optimistic.name)
+          );
+          
+          if (matchingReal) {
+            if (process.env.NODE_ENV !== 'production') {
+              console.log('🔄 useFolderChildren: Auto-reconciling optimistic folder:', optimistic.tempId, '→', matchingReal.id);
+            }
+            return false; // Remove optimistic item
+          }
+          
+          return true; // Keep optimistic item
+        });
+        
+        // Combine real folders with remaining optimistic items
+        const combinedItems = [...realFolders, ...reconciledOptimistic];
+        
+        // Sort alphabetically
+        return combinedItems.sort((a, b) => a.name.localeCompare(b.name));
+      });
+      
     } catch (err) {
+      if (!isMountedRef.current) return;
+      
       const errorMessage = err instanceof Error ? err.message : 'Failed to load folders';
       setError(errorMessage);
       console.error('useFolderChildren: Error loading folders:', err);
     } finally {
-      setLoading(false);
+      if (isMountedRef.current) {
+        setLoading(false);
+      }
     }
   }, [parentId, adapter]);
 
-  const debouncedRefresh = useCallback(() => {
-    if (refreshTimeoutRef.current) {
-      clearTimeout(refreshTimeoutRef.current);
+  const debouncedRefetch = useCallback(() => {
+    if (refetchTimeoutRef.current) {
+      clearTimeout(refetchTimeoutRef.current);
     }
     
-    refreshTimeoutRef.current = setTimeout(() => {
-      refresh();
+    refetchTimeoutRef.current = setTimeout(() => {
+      refetch();
     }, 50); // 50ms debounce
-  }, [refresh]);
+  }, [refetch]);
 
   const addOptimisticFolder = useCallback((name: string): string => {
     const tempId = generateTempId();
@@ -68,55 +113,99 @@ export function useFolderChildren(parentId: string | null): UseFolderChildrenRes
       parentId,
       createdAt: Date.now(),
       pending: true,
+      subfolderCount: 0,
+      recordingCount: 0,
     };
     
-    console.log('➕ useFolderChildren: Adding optimistic folder:', { tempId, name, parentId });
-    setOptimisticFolders(prev => [...prev, optimisticFolder]);
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('optimistic:add', { tempId, name: name.trim(), parentId });
+    }
+    
+    setItems(prev => {
+      const newItems = [...prev, optimisticFolder];
+      return newItems.sort((a, b) => a.name.localeCompare(b.name));
+    });
     
     return tempId;
   }, [parentId]);
 
+  const replaceOptimisticFolder = useCallback((tempId: string, realFolder: FolderWithCounts) => {
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('optimistic:replace', { tempId, realId: realFolder.id, name: realFolder.name });
+    }
+    
+    setItems(prev => {
+      const newItems = prev.map(item => {
+        if ('tempId' in item && item.tempId === tempId) {
+          // Replace optimistic with real folder
+          return realFolder;
+        }
+        return item;
+      });
+      
+      return newItems.sort((a, b) => a.name.localeCompare(b.name));
+    });
+  }, []);
+
   const removeOptimisticFolder = useCallback((tempId: string) => {
-    console.log('➖ useFolderChildren: Removing optimistic folder:', tempId);
-    setOptimisticFolders(prev => prev.filter(f => f.tempId !== tempId));
-    tempIdToFinalIdMap.current.delete(tempId);
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('optimistic:remove', { tempId });
+    }
+    
+    setItems(prev => prev.filter(item => 
+      !('tempId' in item) || item.tempId !== tempId
+    ));
   }, []);
 
   const handleFolderEvent = useCallback((event?: FolderEvent) => {
     if (!event) {
-      console.log('🔄 useFolderChildren: Generic folder change event, refreshing');
-      debouncedRefresh();
+      if (process.env.NODE_ENV !== 'production') {
+        console.log('🔄 useFolderChildren: Generic folder change event, refetching');
+      }
+      debouncedRefetch();
       return;
     }
 
     const { op, id, parentId: eventParentId } = event.payload;
-    console.log('📡 useFolderChildren: Received folder event:', { op, id, eventParentId, currentParentId: parentId });
+    
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('events:create', { op, id, eventParentId, currentParentId: parentId });
+    }
 
     // Check if this event affects our current parent
     const affectsCurrentParent = 
       eventParentId === parentId || // Direct child operation
-      (op === 'move' && persistedFolders.some(f => f.id === id)); // Moving away from current parent
+      (op === 'move' && items.some(item => 'id' in item && item.id === id)); // Moving away from current parent
 
     if (affectsCurrentParent) {
-      console.log('🎯 useFolderChildren: Event affects current parent, refreshing');
+      if (process.env.NODE_ENV !== 'production') {
+        console.log('🎯 useFolderChildren: Event affects current parent');
+      }
       
-      // Reconciliation: If this is a create event and we have an optimistic folder with the same name
-      if (op === 'create') {
-        const matchingOptimistic = optimisticFolders.find(opt => 
-          opt.parentId === eventParentId && 
-          persistedFolders.some(persisted => persisted.name === opt.name)
+      // For create operations, try to reconcile with optimistic folders
+      if (op === 'create' && eventParentId === parentId) {
+        // Find matching optimistic folder by name
+        const optimisticItem = items.find(item => 
+          'pending' in item && 
+          item.pending && 
+          normalizeString(item.name) === normalizeString(event.payload.name || '')
         );
         
-        if (matchingOptimistic) {
-          console.log('🔄 useFolderChildren: Reconciling optimistic folder:', matchingOptimistic.tempId, '→', id);
-          tempIdToFinalIdMap.current.set(matchingOptimistic.tempId, id);
-          removeOptimisticFolder(matchingOptimistic.tempId);
+        if (optimisticItem && 'tempId' in optimisticItem) {
+          if (process.env.NODE_ENV !== 'production') {
+            console.log('🔄 useFolderChildren: Found matching optimistic folder for reconciliation:', optimisticItem.tempId);
+          }
+          
+          // We need to fetch the real folder data to get counts
+          // For now, trigger a refetch which will handle reconciliation
+          debouncedRefetch();
+          return;
         }
       }
       
-      debouncedRefresh();
+      debouncedRefetch();
     }
-  }, [parentId, persistedFolders, optimisticFolders, debouncedRefresh, removeOptimisticFolder]);
+  }, [parentId, items, debouncedRefetch]);
 
   // Subscribe to folder events
   useEffect(() => {
@@ -126,27 +215,26 @@ export function useFolderChildren(parentId: string | null): UseFolderChildrenRes
 
   // Load initial data
   useEffect(() => {
-    refresh();
-  }, [refresh]);
+    refetch();
+  }, [refetch]);
 
-  // Cleanup timeout on unmount
+  // Cleanup on unmount
   useEffect(() => {
     return () => {
-      if (refreshTimeoutRef.current) {
-        clearTimeout(refreshTimeoutRef.current);
+      isMountedRef.current = false;
+      if (refetchTimeoutRef.current) {
+        clearTimeout(refetchTimeoutRef.current);
       }
     };
   }, []);
 
-  // Combine persisted and optimistic folders
-  const combinedFolders = [...persistedFolders, ...optimisticFolders];
-
   return {
-    folders: combinedFolders,
+    items,
     loading,
     error,
-    refresh,
+    refetch,
     addOptimisticFolder,
+    replaceOptimisticFolder,
     removeOptimisticFolder,
   };
 }

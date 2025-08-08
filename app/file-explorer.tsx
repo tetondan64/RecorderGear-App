@@ -16,6 +16,7 @@ import { Folder } from '@/types/folder';
 import { useAudioPlayer } from '@/hooks/useAudioPlayer';
 import { useFolderChildren } from '@/hooks/useFolderChildren';
 import { TranscriptService } from '@/services/transcriptService';
+import { RecordingsStore } from '@/data/recordingsStore';
 
 export default function FileExplorerScreen() {
   const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
@@ -25,17 +26,18 @@ export default function FileExplorerScreen() {
   const [pathLoading, setPathLoading] = useState(true);
   const [showNewFolderModal, setShowNewFolderModal] = useState(false);
   const [snackbarVisible, setSnackbarVisible] = useState(false);
-  const [snackbarMessage, setSnackbarMessage] = useState(''); // eslint-disable-line @typescript-eslint/no-unused-vars
+  const [snackbarMessage, setSnackbarMessage] = useState('');
   const [isCreating, setIsCreating] = useState(false);
   
   const adapter = FoldersAdapter.getInstance();
   const { 
-    folders, 
-    loading: foldersLoading, 
-    error: foldersError, 
-    refresh: refreshFolders,
+    items: folders,
+    loading: foldersLoading,
+    error: foldersError,
+    refetch: refreshFolders,
     addOptimisticFolder,
-    removeOptimisticFolder 
+    replaceOptimisticFolder,
+    removeOptimisticFolder,
   } = useFolderChildren(currentFolderId);
   const { playPause, seekTo, getCurrentTime, isPlaying, stopPlaybackIfPlaying } = useAudioPlayer(recordings);
 
@@ -102,7 +104,9 @@ export default function FileExplorerScreen() {
 
   const handleCreateFolder = async (folderName: string) => {
     if (isCreating) {
-      console.log('⚠️ FileExplorer: Create already in progress, ignoring');
+      if (process.env.NODE_ENV !== 'production') {
+        console.log('⚠️ FileExplorer: Create already in progress, ignoring');
+      }
       return;
     }
 
@@ -111,6 +115,8 @@ export default function FileExplorerScreen() {
     let optimisticMs = 0;
     let totalMs = 0;
     let success = false;
+    let watchdogTimeout: NodeJS.Timeout | null = null;
+    let finalWatchdogTimeout: NodeJS.Timeout | null = null;
 
     try {
       setIsCreating(true);
@@ -151,26 +157,61 @@ export default function FileExplorerScreen() {
       optimisticTempId = addOptimisticFolder(trimmedName);
       optimisticMs = Date.now() - startTime;
       
-      console.log('➕ FileExplorer: Added optimistic folder:', { tempId: optimisticTempId, name: trimmedName });
+      if (process.env.NODE_ENV !== 'production') {
+        console.log('➕ FileExplorer: Added optimistic folder:', { tempId: optimisticTempId, name: trimmedName });
+      }
+      
+      // Set up watchdog timers
+      watchdogTimeout = setTimeout(() => {
+        if (process.env.NODE_ENV !== 'production') {
+          console.log('⏰ FileExplorer: Watchdog refetch triggered for tempId:', optimisticTempId);
+        }
+        refreshFolders();
+      }, 2500);
+      
+      finalWatchdogTimeout = setTimeout(() => {
+        if (optimisticTempId) {
+          if (process.env.NODE_ENV !== 'production') {
+            console.log('⏰ FileExplorer: Final watchdog removing stuck folder:', optimisticTempId);
+          }
+          removeOptimisticFolder(optimisticTempId);
+          showSnackbar('Folder creation timed out. Please try again.');
+        }
+      }, 3500);
       
       // Create the actual folder
       const newFolder = await adapter.create(trimmedName, currentFolderId);
       totalMs = Date.now() - startTime;
       success = true;
       
-      console.log('✅ FileExplorer: Folder created successfully:', { 
-        id: newFolder.id, 
-        name: newFolder.name,
-        tempId: optimisticTempId 
-      });
+      if (process.env.NODE_ENV !== 'production') {
+        console.log('✅ FileExplorer: Folder created successfully:', { 
+          id: newFolder.id, 
+          name: newFolder.name,
+          tempId: optimisticTempId 
+        });
+      }
+      
+      // Clear watchdog timers on success
+      if (watchdogTimeout) clearTimeout(watchdogTimeout);
+      if (finalWatchdogTimeout) clearTimeout(finalWatchdogTimeout);
       
       setShowNewFolderModal(false);
       showSnackbar(`Folder "${folderName}" created`);
       
-      // The folders_changed event will trigger reconciliation automatically
+      // Safety refetch after a short delay
+      setTimeout(() => {
+        refreshFolders();
+      }, 100);
       
     } catch (error) {
-      console.error('❌ FileExplorer: Folder creation failed:', error);
+      if (process.env.NODE_ENV !== 'production') {
+        console.error('❌ FileExplorer: Folder creation failed:', error);
+      }
+      
+      // Clear watchdog timers on error
+      if (watchdogTimeout) clearTimeout(watchdogTimeout);
+      if (finalWatchdogTimeout) clearTimeout(finalWatchdogTimeout);
       
       // Remove optimistic folder on error
       if (optimisticTempId) {
@@ -183,19 +224,16 @@ export default function FileExplorerScreen() {
     } finally {
       setIsCreating(false);
       
-      // Telemetry logging
-      console.log('📊 folder_create:', {
-        parentId: currentFolderId,
-        nameLength: folderName.trim().length,
-        optimisticMs,
-        totalMs,
-        ok: success,
-      });
-      
-      // Ensure fresh data after create attempt
-      setTimeout(() => {
-        refreshFolders();
-      }, 100);
+      if (process.env.NODE_ENV !== 'production') {
+        // Telemetry logging
+        console.log('📊 folder_create:', {
+          parentId: currentFolderId,
+          nameLength: folderName.trim().length,
+          optimisticMs,
+          totalMs,
+          ok: success,
+        });
+      }
     }
   };
 

@@ -64,6 +64,9 @@ export class FoldersAdapter {
   }
 
   private emitEvent(op: FolderEvent['payload']['op'], id: string, parentId?: string | null): void {
+    // Get folder name for reconciliation
+    const folderName = this.allFoldersCache?.data.find(f => f.id === id)?.name || '';
+    
     this.version++;
     const event: FolderEvent = {
       type: 'folders_changed',
@@ -71,6 +74,7 @@ export class FoldersAdapter {
         op,
         id,
         parentId,
+        name: folderName,
         timestamp: Date.now(),
         version: this.version,
       },
@@ -121,6 +125,10 @@ export class FoldersAdapter {
   async create(name: string, parentId?: string | null): Promise<Folder> {
     try {
       const newFolder = await RecordingsStore.createFolder(name, parentId);
+      
+      // Invalidate cache to ensure fresh data
+      this.invalidateCache();
+      
       this.emitEvent('create', newFolder.id, parentId);
       return newFolder;
     } catch (error) {

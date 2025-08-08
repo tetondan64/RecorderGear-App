@@ -35,6 +35,7 @@ export default function FolderCard({
   const hasItems = totalItems > 0;
 
   const formatItemCount = () => {
+    if (isPending) return 'Creating...';
     if (totalItems === 0) return 'Empty';
     
     const parts = [];
@@ -122,7 +123,7 @@ export default function FolderCard({
             </View>
 
             {/* Metadata Row */}
-            {!isPending && (
+            {!isPending && folder.createdAt && (
               <View style={styles.metadataRow}>
                 <Text style={styles.dateText}>
                   Created {formatDate(folder.createdAt)}
