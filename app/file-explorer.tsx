@@ -54,7 +54,7 @@ export default function FileExplorerScreen() {
       console.log('🔄 FileExplorer: Screen focused, refreshing content');
       loadRecordingsAndPath();
       refreshFolders();
-    }, [currentFolderId])
+    }, [currentFolderId, refreshFolders])
   );
 
 
