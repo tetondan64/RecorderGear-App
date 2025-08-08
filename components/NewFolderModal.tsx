@@ -8,23 +8,25 @@ interface NewFolderModalProps {
   visible: boolean;
   onConfirm: (folderName: string) => Promise<void>;
   onCancel: () => void;
+  isCreating?: boolean;
 }
 
 export default function NewFolderModal({
   visible,
   onConfirm,
   onCancel,
+  isCreating = false,
 }: NewFolderModalProps) {
   const [folderName, setFolderName] = useState('');
   const [error, setError] = useState<string | null>(null);
-  const [isCreating, setIsCreating] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const inputRef = useRef<TextInput>(null);
 
   useEffect(() => {
     if (visible) {
       setFolderName('');
       setError(null);
-      setIsCreating(false);
+      setIsSubmitting(false);
       
       // Focus input after modal opens
       setTimeout(() => {
@@ -62,7 +64,7 @@ export default function NewFolderModal({
     }
     
     try {
-      setIsCreating(true);
+      setIsSubmitting(true);
       setError(null);
       
       await onConfirm(folderName.trim());
@@ -72,7 +74,7 @@ export default function NewFolderModal({
       const errorMessage = error instanceof Error ? error.message : 'Failed to create folder';
       setError(errorMessage);
     } finally {
-      setIsCreating(false);
+      setIsSubmitting(false);
     }
   };
 
@@ -129,7 +131,7 @@ export default function NewFolderModal({
                   <TouchableOpacity 
                     style={styles.cancelButton} 
                     onPress={onCancel}
-                    disabled={isCreating}
+                    disabled={isCreating || isSubmitting}
                   >
                     <BlurView intensity={18} style={styles.cancelButtonBlur}>
                       <Text style={styles.cancelButtonText}>Cancel</Text>
@@ -139,14 +141,14 @@ export default function NewFolderModal({
                   <TouchableOpacity 
                     style={styles.confirmButton} 
                     onPress={handleConfirm}
-                    disabled={isCreating || !folderName.trim()}
+                    disabled={isCreating || isSubmitting || !folderName.trim()}
                   >
                     <LinearGradient
                       colors={['#f4ad3d', '#e09b2d']}
-                      style={[styles.confirmButtonGradient, (isCreating || !folderName.trim()) && styles.disabledButton]}
+                      style={[styles.confirmButtonGradient, (isCreating || isSubmitting || !folderName.trim()) && styles.disabledButton]}
                     >
                       <Text style={styles.confirmButtonText}>
-                        {isCreating ? 'Creating...' : 'Create'}
+                        {isCreating || isSubmitting ? 'Creating...' : 'Create'}
                       </Text>
                     </LinearGradient>
                   </TouchableOpacity>

@@ -14,6 +14,7 @@ interface FolderCardProps {
   onRename: (folder: FolderType, newName: string) => void;
   onDelete: (folder: FolderType) => void;
   isReadOnlyDueToDepth?: boolean;
+  isPending?: boolean;
 }
 
 export default function FolderCard({
@@ -24,6 +25,7 @@ export default function FolderCard({
   onRename,
   onDelete,
   isReadOnlyDueToDepth = false,
+  isPending = false,
 }: FolderCardProps) {
   const [showContextMenu, setShowContextMenu] = useState(false);
   const [showRenameModal, setShowRenameModal] = useState(false);
@@ -65,6 +67,7 @@ export default function FolderCard({
 
   const handleMorePress = (e: any) => {
     e.stopPropagation();
+    if (isPending) return; // Disable context menu for pending folders
     setShowContextMenu(true);
   };
 
@@ -80,45 +83,58 @@ export default function FolderCard({
 
   return (
     <View style={styles.container}>
-      <TouchableOpacity style={styles.card} onPress={onPress}>
+      <TouchableOpacity 
+        style={[styles.card, isPending && styles.pendingCard]} 
+        onPress={isPending ? undefined : onPress}
+        disabled={isPending}
+      >
         <BlurView intensity={18} style={styles.cardBlur}>
           <View style={styles.content}>
             {/* Header Row */}
             <View style={styles.headerRow}>
               <View style={styles.folderInfo}>
-                <View style={styles.folderIconContainer}>
+                <View style={[styles.folderIconContainer, isPending && styles.pendingIconContainer]}>
                   <Folder size={24} color="#f4ad3d" strokeWidth={1.5} />
+                  {isPending && (
+                    <View style={styles.pendingIndicator}>
+                      <View style={styles.pendingDot} />
+                    </View>
+                  )}
                 </View>
                 <View style={styles.folderDetails}>
-                  <Text style={styles.folderName} numberOfLines={1}>
+                  <Text style={[styles.folderName, isPending && styles.pendingText]} numberOfLines={1}>
                     {folder.name}
                   </Text>
-                  <Text style={styles.itemCount}>
-                    {formatItemCount()}
+                  <Text style={[styles.itemCount, isPending && styles.pendingSubtext]}>
+                    {isPending ? 'Creating...' : formatItemCount()}
                   </Text>
                 </View>
               </View>
               
-              <TouchableOpacity 
-                style={styles.moreButton} 
-                onPress={handleMorePress}
-              >
-                <MoreHorizontal size={20} color="rgba(255, 255, 255, 0.7)" strokeWidth={1.5} />
-              </TouchableOpacity>
+              {!isPending && (
+                <TouchableOpacity 
+                  style={styles.moreButton} 
+                  onPress={handleMorePress}
+                >
+                  <MoreHorizontal size={20} color="rgba(255, 255, 255, 0.7)" strokeWidth={1.5} />
+                </TouchableOpacity>
+              )}
             </View>
 
             {/* Metadata Row */}
-            <View style={styles.metadataRow}>
-              <Text style={styles.dateText}>
-                Created {formatDate(folder.createdAt)}
-              </Text>
-            </View>
+            {!isPending && (
+              <View style={styles.metadataRow}>
+                <Text style={styles.dateText}>
+                  Created {formatDate(folder.createdAt)}
+                </Text>
+              </View>
+            )}
           </View>
         </BlurView>
       </TouchableOpacity>
 
       {/* Context Menu */}
-      {showContextMenu && (
+      {showContextMenu && !isPending && (
         <TouchableOpacity 
           style={styles.contextMenuOverlay} 
           onPress={() => setShowContextMenu(false)}
@@ -152,15 +168,15 @@ export default function FolderCard({
       )}
 
       {/* Rename Modal */}
-      <RenameModal
+      {!isPending && <RenameModal
         visible={showRenameModal}
         currentName={folder.name}
         onConfirm={handleRenameConfirm}
         onCancel={() => setShowRenameModal(false)}
-      />
+      />}
 
       {/* Delete Confirmation Modal */}
-      <ConfirmModal
+      {!isPending && <ConfirmModal
         visible={showDeleteModal}
         title="Delete Folder?"
         message={
@@ -173,7 +189,7 @@ export default function FolderCard({
         onConfirm={handleDeleteConfirm}
         onCancel={() => setShowDeleteModal(false)}
         isDestructive={true}
-      />
+      />}
     </View>
   );
 }
@@ -189,6 +205,11 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.1)',
     overflow: 'hidden',
+  },
+  pendingCard: {
+    opacity: 0.7,
+    backgroundColor: 'rgba(244, 173, 61, 0.05)',
+    borderColor: 'rgba(244, 173, 61, 0.2)',
   },
   cardBlur: {
     flex: 1,
@@ -215,6 +236,27 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 12,
+    position: 'relative',
+  },
+  pendingIconContainer: {
+    backgroundColor: 'rgba(244, 173, 61, 0.2)',
+  },
+  pendingIndicator: {
+    position: 'absolute',
+    top: -2,
+    right: -2,
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: 'rgba(244, 173, 61, 0.3)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  pendingDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#f4ad3d',
   },
   folderDetails: {
     flex: 1,
@@ -225,9 +267,17 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     marginBottom: 2,
   },
+  pendingText: {
+    color: 'rgba(255, 255, 255, 0.8)',
+    fontStyle: 'italic',
+  },
   itemCount: {
     fontSize: 14,
     color: 'rgba(255, 255, 255, 0.6)',
+  },
+  pendingSubtext: {
+    color: '#f4ad3d',
+    fontWeight: '600',
   },
   itemCountRow: {
     flexDirection: 'row',

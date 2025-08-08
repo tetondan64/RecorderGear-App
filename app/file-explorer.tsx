@@ -10,32 +10,37 @@ import FileCard from '@/components/FileCard';
 import EmptyState from '@/components/EmptyState';
 import NewFolderModal from '@/components/NewFolderModal';
 import SnackBar from '@/components/SnackBar';
-import { FoldersAdapter } from '@/services/foldersAdapter';
+import { FoldersAdapter, FolderWithCounts } from '@/services/foldersAdapter';
 import { AudioFile } from '@/types/audio';
 import { Folder } from '@/types/folder';
 import { useAudioPlayer } from '@/hooks/useAudioPlayer';
+import { useFolderChildren } from '@/hooks/useFolderChildren';
 import { TranscriptService } from '@/services/transcriptService';
-
-interface FolderWithCounts extends Folder {
-  subfolderCount: number;
-  recordingCount: number;
-}
 
 export default function FileExplorerScreen() {
   const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
-  const [folders, setFolders] = useState<any[]>([]);
   const [recordings, setRecordings] = useState<AudioFile[]>([]);
   const [folderPath, setFolderPath] = useState<Folder[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [recordingsLoading, setRecordingsLoading] = useState(true);
+  const [pathLoading, setPathLoading] = useState(true);
   const [showNewFolderModal, setShowNewFolderModal] = useState(false);
   const [snackbarVisible, setSnackbarVisible] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState('');
+  const [isCreating, setIsCreating] = useState(false);
   
   const adapter = FoldersAdapter.getInstance();
+  const { 
+    folders, 
+    loading: foldersLoading, 
+    error: foldersError, 
+    refresh: refreshFolders,
+    addOptimisticFolder,
+    removeOptimisticFolder 
+  } = useFolderChildren(currentFolderId);
   const { playPause, seekTo, getCurrentTime, isPlaying, stopPlaybackIfPlaying } = useAudioPlayer(recordings);
 
   useEffect(() => {
-    loadFolderContent();
+    loadRecordingsAndPath();
     
     // Debug: Log what we're loading
     console.log('🔍 FileExplorer: Loading content for folderId:', currentFolderId);
@@ -45,48 +50,38 @@ export default function FileExplorerScreen() {
   useFocusEffect(
     React.useCallback(() => {
       console.log('🔄 FileExplorer: Screen focused, refreshing content');
-      loadFolderContent();
+      loadRecordingsAndPath();
+      refreshFolders();
     }, [currentFolderId])
   );
 
-  useEffect(() => {
-    // Subscribe to store changes
-    const unsubscribe = adapter.watch(() => {
-      console.log('🔄 FileExplorer: Store changed, refreshing content');
-      loadFolderContent();
-    });
-    
-    return unsubscribe;
-  }, [currentFolderId, adapter]);
 
-  const loadFolderContent = async () => {
+  const loadRecordingsAndPath = async () => {
     try {
-      setLoading(true);
+      setRecordingsLoading(true);
+      setPathLoading(true);
       
       console.log('🔍 FileExplorer: Starting to load folder content for:', currentFolderId);
       
-      // Load folders with counts, recordings, and path for current location
-      const [foldersWithCounts, recordingsData, pathData] = await Promise.all([
-        adapter.listChildren(currentFolderId),
+      // Load recordings and path for current location
+      const [recordingsData, pathData] = await Promise.all([
         adapter.getRecordingsInFolder(currentFolderId),
         adapter.getPath(currentFolderId),
       ]);
       
       console.log('🔍 FileExplorer: Loaded data:', {
-        foldersCount: foldersWithCounts.length,
         recordingsCount: recordingsData.length,
         pathLength: pathData.length,
-        folders: foldersWithCounts.map(f => ({ id: f.id, name: f.name, parentId: f.parentId }))
       });
       
-      setFolders(foldersWithCounts);
       setRecordings(recordingsData);
       setFolderPath(pathData);
     } catch (error) {
       console.error('Failed to load folder content:', error);
       Alert.alert('Error', 'Failed to load folder content');
     } finally {
-      setLoading(false);
+      setRecordingsLoading(false);
+      setPathLoading(false);
     }
   };
 
@@ -104,12 +99,101 @@ export default function FileExplorerScreen() {
   };
 
   const handleCreateFolder = async (folderName: string) => {
+    if (isCreating) {
+      console.log('⚠️ FileExplorer: Create already in progress, ignoring');
+      return;
+    }
+
+    const startTime = Date.now();
+    let optimisticTempId: string | null = null;
+    let optimisticMs = 0;
+    let totalMs = 0;
+    let success = false;
+
     try {
-      await adapter.create(folderName, currentFolderId);
+      setIsCreating(true);
+      
+      // Client-side validation
+      const trimmedName = folderName.trim();
+      
+      if (!trimmedName) {
+        throw new Error('Folder name cannot be empty');
+      }
+      
+      if (trimmedName.length > 32) {
+        throw new Error('Folder name must be 32 characters or less');
+      }
+      
+      // Check for illegal characters
+      const illegalChars = /[<>:"/\\|?*]/g;
+      if (illegalChars.test(trimmedName)) {
+        throw new Error('Folder name contains invalid characters');
+      }
+      
+      // Check for duplicates in current parent
+      const isDuplicate = folders.some(folder => 
+        folder.name.toLowerCase() === trimmedName.toLowerCase() && !folder.pending
+      );
+      
+      if (isDuplicate) {
+        throw new Error('A folder with this name already exists in this location');
+      }
+      
+      // Check depth limit
+      const currentDepth = await adapter.getDepth(currentFolderId);
+      if (currentDepth >= 2) {
+        throw new Error('Cannot create folders deeper than 2 levels');
+      }
+      
+      // Add optimistic folder
+      optimisticTempId = addOptimisticFolder(trimmedName);
+      optimisticMs = Date.now() - startTime;
+      
+      console.log('➕ FileExplorer: Added optimistic folder:', { tempId: optimisticTempId, name: trimmedName });
+      
+      // Create the actual folder
+      const newFolder = await adapter.create(trimmedName, currentFolderId);
+      totalMs = Date.now() - startTime;
+      success = true;
+      
+      console.log('✅ FileExplorer: Folder created successfully:', { 
+        id: newFolder.id, 
+        name: newFolder.name,
+        tempId: optimisticTempId 
+      });
+      
       setShowNewFolderModal(false);
       showSnackbar(`Folder "${folderName}" created`);
+      
+      // The folders_changed event will trigger reconciliation automatically
+      
     } catch (error) {
+      console.error('❌ FileExplorer: Folder creation failed:', error);
+      
+      // Remove optimistic folder on error
+      if (optimisticTempId) {
+        removeOptimisticFolder(optimisticTempId);
+      }
+      
+      totalMs = Date.now() - startTime;
+      
       throw error; // Let the modal handle the error display
+    } finally {
+      setIsCreating(false);
+      
+      // Telemetry logging
+      console.log('📊 folder_create:', {
+        parentId: currentFolderId,
+        nameLength: folderName.trim().length,
+        optimisticMs,
+        totalMs,
+        ok: success,
+      });
+      
+      // Ensure fresh data after create attempt
+      setTimeout(() => {
+        refresh();
+      }, 100);
     }
   };
 
@@ -228,6 +312,7 @@ export default function FileExplorerScreen() {
 
   const renderContent = () => {
     const hasContent = folders.length > 0 || recordings.length > 0;
+    const isLoading = foldersLoading || recordingsLoading;
     
     if (!hasContent) {
       return (
@@ -249,7 +334,14 @@ export default function FileExplorerScreen() {
     return (
       <FlatList
         data={allItems}
-        keyExtractor={(item) => `${item.type}-${item.data.id}`}
+        keyExtractor={(item) => {
+          if (item.type === 'folder') {
+            // Use tempId for optimistic folders, id for persisted folders
+            return `folder-${item.data.tempId || item.data.id}`;
+          }
+          return `recording-${item.data.id}`;
+        }}
+        extraData={folders} // Ensure FlatList re-renders when folders change
         getItemLayout={(data, index) => {
           // Estimate item heights for virtualization
           const item = data?.[index];
@@ -271,6 +363,7 @@ export default function FileExplorerScreen() {
                 onRename={handleRenameFolder}
                 onDelete={handleDeleteFolder}
                 isReadOnlyDueToDepth={item.data.isReadOnlyDueToDepth}
+                isPending={item.data.pending}
               />
             );
           } else {
@@ -325,7 +418,7 @@ export default function FileExplorerScreen() {
 
       {/* Content */}
       <View style={styles.contentContainer}>
-        {loading ? (
+        {isLoading ? (
           <View style={styles.loadingContainer}>
             <Text style={styles.loadingText}>Loading...</Text>
           </View>
@@ -339,6 +432,7 @@ export default function FileExplorerScreen() {
         visible={showNewFolderModal}
         onConfirm={handleCreateFolder}
         onCancel={() => setShowNewFolderModal(false)}
+        isCreating={isCreating}
       />
 
       {/* Snackbar */}

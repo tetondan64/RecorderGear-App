@@ -4,6 +4,8 @@ export interface Folder {
   parentId?: string | null;
   createdAt: number;
   isReadOnlyDueToDepth?: boolean;
+  tempId?: string;
+  pending?: boolean;
 }
 
 export interface FolderFilter {
