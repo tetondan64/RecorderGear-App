@@ -43,23 +43,20 @@ export class WhisperService {
     }
 
     // Convert file URI to File object for FormData
-    let actualFile: File;
+    let fileBlob: Blob;
+    let fileName: string;
     try {
       if (Platform.OS === 'web' && file.base64Data) {
         // Use stored Base64 data directly on web platform
-        const blob = AudioStorageService.base64ToBlob(file.base64Data, file.mimeType || 'audio/mpeg');
-        actualFile = new File([blob], file.name, { 
-          type: file.mimeType || 'audio/mpeg' 
-        });
+        fileBlob = AudioStorageService.base64ToBlob(file.base64Data, file.mimeType || 'audio/mpeg');
+        fileName = file.name;
       } else {
         // Use fetch for blob URLs or native file URIs
         const response = await fetch(file.uri);
-        const blob = await response.blob();
-        actualFile = new File([blob], file.name, { 
-          type: file.mimeType || 'audio/mpeg' 
-        });
+        fileBlob = await response.blob();
+        fileName = file.name;
       }
-      console.log('✅ File prepared:', actualFile.name, actualFile.size, 'bytes');
+      console.log('✅ File prepared:', fileName, fileBlob.size, 'bytes');
     } catch (error) {
       console.error('❌ Failed to prepare file:', error);
       throw new Error('Failed to prepare file for upload');
@@ -67,7 +64,7 @@ export class WhisperService {
 
     // Prepare FormData for Whisper API
     const formData = new FormData();
-    formData.append('file', actualFile);
+    formData.append('file', fileBlob, fileName);
     formData.append('model', 'whisper-1');
     formData.append('response_format', 'verbose_json');
     formData.append('temperature', '0');
