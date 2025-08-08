@@ -25,7 +25,7 @@ export default function FileExplorerScreen() {
   const [pathLoading, setPathLoading] = useState(true);
   const [showNewFolderModal, setShowNewFolderModal] = useState(false);
   const [snackbarVisible, setSnackbarVisible] = useState(false);
-  const [snackbarMessage, setSnackbarMessage] = useState('');
+  const [snackbarMessage, setSnackbarMessage] = useState(''); // eslint-disable-line @typescript-eslint/no-unused-vars
   const [isCreating, setIsCreating] = useState(false);
   
   const adapter = FoldersAdapter.getInstance();
@@ -38,6 +38,8 @@ export default function FileExplorerScreen() {
     removeOptimisticFolder 
   } = useFolderChildren(currentFolderId);
   const { playPause, seekTo, getCurrentTime, isPlaying, stopPlaybackIfPlaying } = useAudioPlayer(recordings);
+
+  const isLoading = foldersLoading || recordingsLoading || pathLoading;
 
   useEffect(() => {
     loadRecordingsAndPath();
@@ -312,7 +314,7 @@ export default function FileExplorerScreen() {
 
   const renderContent = () => {
     const hasContent = folders.length > 0 || recordings.length > 0;
-    const isLoading = foldersLoading || recordingsLoading;
+    // isLoading is now defined at the top of the component
     
     if (!hasContent) {
       return (
