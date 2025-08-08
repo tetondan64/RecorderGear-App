@@ -5,6 +5,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { ArrowLeft, Plus, Chrome as Home, ChevronRight } from 'lucide-react-native';
 import { BlurView } from 'expo-blur';
 import Layout from '@/components/Layout';
+import { FolderExplorerProvider } from '@/context/FolderExplorerContext';
 import FileExplorerContent from '@/components/FileExplorerContent';
 import { FoldersAdapter } from '@/services/foldersAdapter';
 import { AudioFile } from '@/types/audio';
@@ -13,7 +14,6 @@ import { RecordingsStore } from '@/data/recordingsStore';
 export default function FileExplorerScreen() {
   const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
   const [recordings, setRecordings] = useState<AudioFile[]>([]);
-  const [folderPath, setFolderPath] = useState<Folder[]>([]);
   const [recordingsLoading, setRecordingsLoading] = useState(true);
   const [pathLoading, setPathLoading] = useState(true);
   
@@ -30,13 +30,11 @@ export default function FileExplorerScreen() {
   useFocusEffect(
     React.useCallback(() => {
       console.log('🔄 FileExplorer: Screen focused, refreshing content');
-      loadRecordingsAndPath();
-    }, [currentFolderId])
+      loadRecordings(); // Only load recordings here, path is handled by context
+    }, [currentFolderId]) // Depend on currentFolderId
   );
 
-  const loadRecordingsAndPath = async () => {
-    try {
-      setRecordingsLoading(true);
+  const loadRecordings = async () => {
       setPathLoading(true);
       
       console.log('🔍 FileExplorer: Starting to load folder content for:', currentFolderId);
@@ -44,12 +42,10 @@ export default function FileExplorerScreen() {
       // Load recordings and path for current location
       const [recordingsData, pathData] = await Promise.all([
         adapter.getRecordingsInFolder(currentFolderId),
-        adapter.getPath(currentFolderId),
       ]);
       
       console.log('🔍 FileExplorer: Loaded data:', {
         recordingsCount: recordingsData.length,
-        pathLength: pathData.length,
       });
       
       setRecordings(recordingsData);
@@ -57,11 +53,6 @@ export default function FileExplorerScreen() {
     } catch (error) {
       console.error('Failed to load folder content:', error);
       Alert.alert('Error', 'Failed to load folder content');
-    } finally {
-      setRecordingsLoading(false);
-      setPathLoading(false);
-    }
-  };
 
   const showSnackbar = (message: string) => {
     setSnackbarMessage(message);
@@ -74,13 +65,6 @@ export default function FileExplorerScreen() {
 
   const handleBreadcrumbPress = (folderId: string | null) => {
     setCurrentFolderId(folderId);
-  };
-
-  const handleCreateFolder = async (folderName: string) => {
-    let optimisticMs = 0;
-    let totalMs = 0;
-    let success = false;
-    let watchdogTimeout: NodeJS.Timeout | null = null;
   };
 
   const renderBreadcrumbs = () => {
@@ -149,7 +133,7 @@ export default function FileExplorerScreen() {
 
         {/* Content */}
         <View style={styles.contentContainer}>
-          <FolderExplorerProvider parentId={currentFolderId}>
+          <FolderExplorerProvider parentId={currentFolderId}> {/* Wrap with provider */}
             <FileExplorerContent
               recordings={recordings}
               recordingsLoading={recordingsLoading}

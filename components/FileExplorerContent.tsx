@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, FlatList, Alert } from 'react-native';
 import { router } from 'expo-router';
 import { Plus } from 'lucide-react-native';
@@ -14,6 +14,7 @@ import { useAudioPlayer } from '@/hooks/useAudioPlayer';
 import { TranscriptService } from '@/services/transcriptService';
 import { RecordingsStore } from '@/data/recordingsStore';
 import { useFolderExplorer } from '@/context/FolderExplorerContext';
+import { useFolderExplorer } from '@/context/FolderExplorerContext';
 
 interface FileExplorerContentProps {
   recordings: AudioFile[];
@@ -28,13 +29,13 @@ export default function FileExplorerContent({
   recordingsLoading,
   pathLoading,
   currentFolderId,
-  onFolderPress,
+  onFolderPress, // This prop is now handled internally by useFolderExplorer
 }: FileExplorerContentProps) {
   const [showNewFolderModal, setShowNewFolderModal] = useState(false);
   const [snackbarVisible, setSnackbarVisible] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState('');
   const [isCreating, setIsCreating] = useState(false);
-  
+
   const { 
     items: folders,
     loading: foldersLoading,
@@ -43,7 +44,7 @@ export default function FileExplorerContent({
     addOptimisticFolder,
     replaceOptimisticFolder,
     removeOptimisticFolder,
-  } = useFolderExplorer();
+  } = useFolderExplorer(); // Consume from context
   
   const { playPause, seekTo, getCurrentTime, isPlaying, stopPlaybackIfPlaying } = useAudioPlayer(recordings);
   const adapter = FoldersAdapter.getInstance();
@@ -55,7 +56,7 @@ export default function FileExplorerContent({
     setSnackbarVisible(true);
   };
 
-  const handleCreateFolder = async (folderName: string) => {
+  const handleCreateFolder = useCallback(async (folderName: string) => {
     if (isCreating) {
       console.log('⚠️ FileExplorerContent: Create already in progress, ignoring');
       return;
@@ -188,7 +189,7 @@ export default function FileExplorerContent({
         ok: success,
       });
     }
-  };
+  }, [isCreating, folders, currentFolderId, addOptimisticFolder, refreshFolders, removeOptimisticFolder]);
 
   const handleRenameFolder = async (folder: Folder, newName: string) => {
     try {
