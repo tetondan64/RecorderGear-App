@@ -33,7 +33,7 @@ export default function TabLayout() {
             height: 90 + insets.bottom,
             paddingBottom: 20 + insets.bottom,
             paddingTop: 15,
-            paddingHorizontal: 35,
+            paddingHorizontal: 20,
             borderTopLeftRadius: 0,
             borderTopRightRadius: 0,
             overflow: 'hidden',
