@@ -4,27 +4,29 @@ import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
 
 interface EmptyStateProps {
-  icon: React.ReactNode;
+  icon?: React.ReactNode;
   title: string;
   subtitle?: string;
   buttonText?: string;
   onButtonPress?: () => void;
 }
 
-export default function EmptyState({ 
-  icon, 
-  title, 
-  subtitle, 
-  buttonText, 
-  onButtonPress 
+export default function EmptyState({
+  icon,
+  title,
+  subtitle,
+  buttonText,
+  onButtonPress
 }: EmptyStateProps) {
   return (
     <View style={styles.container}>
-      <View style={styles.iconContainer}>
-        <BlurView intensity={18} style={styles.iconBlur}>
-          {icon}
-        </BlurView>
-      </View>
+      {icon && (
+        <View style={styles.iconContainer}>
+          <BlurView intensity={18} style={styles.iconBlur}>
+            {icon}
+          </BlurView>
+        </View>
+      )}
       
       <Text style={styles.title}>{title}</Text>
       
