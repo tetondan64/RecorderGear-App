@@ -46,7 +46,7 @@ export default function FileExplorerScreen() {
       // Load recordings and path for current location
       const [recordingsData, pathData] = await Promise.all([
         adapter.getRecordingsInFolder(currentFolderId),
-        adapter.getFolderPath(currentFolderId)
+        adapter.getPath(currentFolderId)
       ]);
       
       console.log('🔍 FileExplorer: Loaded data:', {
