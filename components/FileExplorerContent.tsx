@@ -42,6 +42,7 @@ const FileExplorerContent = forwardRef<FileExplorerContentHandles, FileExplorerC
   },
   ref) => {
   const [showNewFolderModal, setShowNewFolderModal] = useState(false);
+  const [newFolderParentId, setNewFolderParentId] = useState<string | null>(null);
   const [snackbarVisible, setSnackbarVisible] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState('');
   const [isCreating, setIsCreating] = useState(false);
@@ -49,7 +50,10 @@ const FileExplorerContent = forwardRef<FileExplorerContentHandles, FileExplorerC
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
 
   useImperativeHandle(ref, () => ({
-    openNewFolderModal: () => setShowNewFolderModal(true),
+    openNewFolderModal: () => {
+      setNewFolderParentId(null);
+      setShowNewFolderModal(true);
+    },
   }));
 
   const { 
@@ -72,7 +76,12 @@ const FileExplorerContent = forwardRef<FileExplorerContentHandles, FileExplorerC
     setSnackbarVisible(true);
   };
 
-  const handleCreateFolder = useCallback(async (folderName: string) => {
+  const handleCreateSubfolder = (folder: Folder) => {
+    setNewFolderParentId(folder.id);
+    setShowNewFolderModal(true);
+  };
+
+  const handleCreateFolder = useCallback(async (folderName: string, parentId?: string | null) => {
     if (isCreating) {
       console.log('⚠️ FileExplorerContent: Create already in progress, ignoring');
       return;
@@ -91,41 +100,42 @@ const FileExplorerContent = forwardRef<FileExplorerContentHandles, FileExplorerC
       
       // Client-side validation
       const trimmedName = folderName.trim();
-      
+
       if (!trimmedName) {
         throw new Error('Folder name cannot be empty');
       }
-      
+
       if (trimmedName.length > 32) {
         throw new Error('Folder name must be 32 characters or less');
       }
-      
+
       // Check for illegal characters
       const illegalChars = /[<>:"/\\|?*]/g;
       if (illegalChars.test(trimmedName)) {
         throw new Error('Folder name contains invalid characters');
       }
-      
-      // Check for duplicates in current parent
-      const isDuplicate = folders.some(folder => 
-        folder.name.toLowerCase() === trimmedName.toLowerCase() && !folder.pending
-      );
-      
+
+      const targetParentId = parentId ?? currentFolderId;
+
+      // Check for duplicates in target parent
+      const isDuplicate = await adapter.existsInParent(trimmedName, targetParentId);
       if (isDuplicate) {
         throw new Error('A folder with this name already exists in this location');
       }
-      
+
       // Check depth limit
-      const currentDepth = await adapter.getDepth(currentFolderId);
+      const currentDepth = await adapter.getDepth(targetParentId);
       if (currentDepth >= 2) {
         throw new Error('Cannot create folders deeper than 2 levels');
       }
-      
-      // Add optimistic folder
-      optimisticTempId = addOptimisticFolder(trimmedName);
-      optimisticMs = Date.now() - startTime;
-      
-      console.log('optimistic:add', { tempId: optimisticTempId, name: trimmedName, parentId: currentFolderId });
+
+      if (targetParentId === currentFolderId) {
+        // Add optimistic folder
+        optimisticTempId = addOptimisticFolder(trimmedName);
+        optimisticMs = Date.now() - startTime;
+
+        console.log('optimistic:add', { tempId: optimisticTempId, name: trimmedName, parentId: targetParentId });
+      }
       
       // Set up watchdog timers
       watchdogTimeout = setTimeout(() => {
@@ -142,7 +152,7 @@ const FileExplorerContent = forwardRef<FileExplorerContentHandles, FileExplorerC
       }, 3500);
       
       // Create the actual folder
-      const newFolder = await adapter.create(trimmedName, currentFolderId);
+      const newFolder = await adapter.create(trimmedName, targetParentId);
       totalMs = Date.now() - startTime;
       success = true;
       
@@ -152,7 +162,7 @@ const FileExplorerContent = forwardRef<FileExplorerContentHandles, FileExplorerC
         tempId: optimisticTempId 
       });
 
-      // Emit local reconcile event for immediate UI update
+      // Emit local reconcile event for immediate UI update or refresh children
       if (optimisticTempId) {
         console.log('local:reconcile', { tempId: optimisticTempId, realId: newFolder.id });
         replaceOptimisticFolder(optimisticTempId, {
@@ -161,6 +171,11 @@ const FileExplorerContent = forwardRef<FileExplorerContentHandles, FileExplorerC
           recordingCount: 0,
         });
         setTimeout(() => refreshFolders(), 500);
+      } else if (targetParentId) {
+        const children = await adapter.listChildren(targetParentId);
+        setExpandedFolders(prev => ({ ...prev, [targetParentId]: children }));
+        setExpandedIds(prev => new Set(prev).add(targetParentId));
+        refreshFolders();
       }
 
       // Clear watchdog timers on success
@@ -168,6 +183,7 @@ const FileExplorerContent = forwardRef<FileExplorerContentHandles, FileExplorerC
       if (finalWatchdogTimeout) clearTimeout(finalWatchdogTimeout);
 
       setShowNewFolderModal(false);
+      setNewFolderParentId(null);
       showSnackbar(`Folder "${folderName}" created`);
       
     } catch (error) {
@@ -191,14 +207,14 @@ const FileExplorerContent = forwardRef<FileExplorerContentHandles, FileExplorerC
       
       // Telemetry logging
       console.log('📊 folder_create:', {
-        parentId: currentFolderId,
+        parentId: parentId ?? currentFolderId,
         nameLength: folderName.trim().length,
         optimisticMs,
         totalMs,
         ok: success,
       });
     }
-  }, [isCreating, folders, currentFolderId, addOptimisticFolder, refreshFolders, removeOptimisticFolder]);
+  }, [isCreating, currentFolderId, addOptimisticFolder, refreshFolders, removeOptimisticFolder, adapter]);
 
   const handleRenameFolder = async (folder: Folder, newName: string) => {
     try {
@@ -284,7 +300,10 @@ const FileExplorerContent = forwardRef<FileExplorerContentHandles, FileExplorerC
           title="Empty Folder"
           subtitle={`Create a new folder or import audio files to get started`}
           buttonText="+ New Folder"
-          onButtonPress={() => setShowNewFolderModal(true)}
+          onButtonPress={() => {
+            setNewFolderParentId(null);
+            setShowNewFolderModal(true);
+          }}
         />
       );
     }
@@ -355,6 +374,7 @@ const FileExplorerContent = forwardRef<FileExplorerContentHandles, FileExplorerC
                   onPress={() => onFolderPress(item.data)}
                   onRename={handleRenameFolder}
                   onDelete={handleDeleteFolder}
+                  onCreateSubfolder={handleCreateSubfolder}
                   isReadOnlyDueToDepth={item.data.isReadOnlyDueToDepth}
                   isPending={item.data.pending}
                   hasChildren={hasChildren}
@@ -398,8 +418,14 @@ const FileExplorerContent = forwardRef<FileExplorerContentHandles, FileExplorerC
       {/* New Folder Modal */}
       <NewFolderModal
         visible={showNewFolderModal}
-        onConfirm={handleCreateFolder}
-        onCancel={() => setShowNewFolderModal(false)}
+        onConfirm={async (name) => {
+          await handleCreateFolder(name, newFolderParentId);
+          setNewFolderParentId(null);
+        }}
+        onCancel={() => {
+          setShowNewFolderModal(false);
+          setNewFolderParentId(null);
+        }}
         isCreating={isCreating}
       />
 
