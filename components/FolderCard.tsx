@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert, Modal, Pressable, GestureResponderEvent } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Alert, Modal } from 'react-native';
 import { BlurView } from 'expo-blur';
-import { Folder, CreditCard as Edit3, Trash2, Lock, X, ChevronRight, ChevronDown } from 'lucide-react-native';
+import { Folder, CreditCard as Edit3, Trash2, Lock, ChevronRight } from 'lucide-react-native';
 import { Folder as FolderType } from '@/types/folder';
 import ConfirmModal from './ConfirmModal';
 import RenameModal from './RenameModal';
@@ -152,25 +152,16 @@ export default function FolderCard({
         <Modal
           visible={showContextMenu}
           transparent
-          animationType="fade"
+          animationType="slide"
           onRequestClose={() => setShowContextMenu(false)}
         >
-          <Pressable
+          <TouchableOpacity
             style={styles.contextMenuOverlay}
+            activeOpacity={1}
             onPress={() => setShowContextMenu(false)}
           >
-            <Pressable
-              style={styles.contextMenu}
-              onPress={(e: GestureResponderEvent) => e.stopPropagation()}
-            >
+            <View style={styles.contextMenu}>
               <BlurView intensity={40} style={styles.contextMenuBlur}>
-                <TouchableOpacity
-                  style={styles.closeButton}
-                  onPress={() => setShowContextMenu(false)}
-                >
-                  <X size={16} color="rgba(255, 255, 255, 0.7)" strokeWidth={1.5} />
-                </TouchableOpacity>
-
                 <TouchableOpacity
                   style={styles.contextMenuItem}
                   onPress={() => {
@@ -193,8 +184,8 @@ export default function FolderCard({
                   <Text style={[styles.contextMenuText, styles.contextMenuTextDanger]}>Delete</Text>
                 </TouchableOpacity>
               </BlurView>
-            </Pressable>
-          </Pressable>
+            </View>
+          </TouchableOpacity>
         </Modal>
       )}
 
@@ -353,30 +344,29 @@ const styles = StyleSheet.create({
   contextMenuOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.4)',
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: 'flex-end',
   },
   chevronButton: {
     padding: 4,
     marginRight: 8,
   },
   contextMenu: {
-    width: 160,
-    borderRadius: 12,
+    width: '100%',
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
     overflow: 'hidden',
   },
   contextMenuBlur: {
     backgroundColor: 'rgba(0, 0, 0, 0.35)',
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.1)',
-    paddingTop: 32,
   },
   contextMenuItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    gap: 12,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    gap: 16,
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(255, 255, 255, 0.05)',
   },
@@ -390,11 +380,5 @@ const styles = StyleSheet.create({
   },
   contextMenuTextDanger: {
     color: '#EF4444',
-  },
-  closeButton: {
-    position: 'absolute',
-    top: 8,
-    right: 8,
-    padding: 4,
   },
 });
