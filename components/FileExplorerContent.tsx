@@ -47,9 +47,13 @@ const FileExplorerContent = forwardRef<FileExplorerContentHandles, FileExplorerC
   const [isCreating, setIsCreating] = useState(false);
   const [expandedFolders, setExpandedFolders] = useState<Record<string, Folder[]>>({});
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
+  const [newFolderParentId, setNewFolderParentId] = useState<string | null>(null);
 
   useImperativeHandle(ref, () => ({
-    openNewFolderModal: () => setShowNewFolderModal(true),
+    openNewFolderModal: () => {
+      setNewFolderParentId(null);
+      setShowNewFolderModal(true);
+    },
   }));
 
   const { 
@@ -72,7 +76,7 @@ const FileExplorerContent = forwardRef<FileExplorerContentHandles, FileExplorerC
     setSnackbarVisible(true);
   };
 
-  const handleCreateFolder = useCallback(async (folderName: string) => {
+  const handleCreateFolder = useCallback(async (folderName: string, parentId?: string | null) => {
     if (isCreating) {
       console.log('⚠️ FileExplorerContent: Create already in progress, ignoring');
       return;
@@ -106,26 +110,31 @@ const FileExplorerContent = forwardRef<FileExplorerContentHandles, FileExplorerC
         throw new Error('Folder name contains invalid characters');
       }
       
-      // Check for duplicates in current parent
-      const isDuplicate = folders.some(folder => 
-        folder.name.toLowerCase() === trimmedName.toLowerCase() && !folder.pending
-      );
-      
-      if (isDuplicate) {
-        throw new Error('A folder with this name already exists in this location');
+      const targetParentId = parentId ?? currentFolderId;
+
+      // Check for duplicates in current parent if creating in the visible folder
+      if (targetParentId === currentFolderId) {
+        const isDuplicate = folders.some(folder =>
+          folder.name.toLowerCase() === trimmedName.toLowerCase() && !folder.pending
+        );
+        if (isDuplicate) {
+          throw new Error('A folder with this name already exists in this location');
+        }
       }
-      
+
       // Check depth limit
-      const currentDepth = await adapter.getDepth(currentFolderId);
+      const currentDepth = await adapter.getDepth(targetParentId);
       if (currentDepth >= 2) {
         throw new Error('Cannot create folders deeper than 2 levels');
       }
-      
-      // Add optimistic folder
-      optimisticTempId = addOptimisticFolder(trimmedName);
-      optimisticMs = Date.now() - startTime;
-      
-      console.log('optimistic:add', { tempId: optimisticTempId, name: trimmedName, parentId: currentFolderId });
+
+      // Add optimistic folder if creating in the current view
+      if (targetParentId === currentFolderId) {
+        optimisticTempId = addOptimisticFolder(trimmedName);
+        optimisticMs = Date.now() - startTime;
+
+        console.log('optimistic:add', { tempId: optimisticTempId, name: trimmedName, parentId: targetParentId });
+      }
       
       // Set up watchdog timers
       watchdogTimeout = setTimeout(() => {
@@ -140,9 +149,9 @@ const FileExplorerContent = forwardRef<FileExplorerContentHandles, FileExplorerC
           showSnackbar('Folder creation timed out. Please try again.');
         }
       }, 3500);
-      
+
       // Create the actual folder
-      const newFolder = await adapter.create(trimmedName, currentFolderId);
+      const newFolder = await adapter.create(trimmedName, targetParentId);
       totalMs = Date.now() - startTime;
       success = true;
       
@@ -161,6 +170,15 @@ const FileExplorerContent = forwardRef<FileExplorerContentHandles, FileExplorerC
           recordingCount: 0,
         });
         setTimeout(() => refreshFolders(), 500);
+      } else {
+        // Refresh folders if creating outside the current view
+        if (targetParentId === currentFolderId) {
+          refreshFolders();
+        } else if (expandedIds.has(targetParentId)) {
+          const children = await adapter.listChildren(targetParentId);
+          setExpandedFolders(prev => ({ ...prev, [targetParentId]: children }));
+          refreshFolders();
+        }
       }
 
       // Clear watchdog timers on success
@@ -168,6 +186,7 @@ const FileExplorerContent = forwardRef<FileExplorerContentHandles, FileExplorerC
       if (finalWatchdogTimeout) clearTimeout(finalWatchdogTimeout);
 
       setShowNewFolderModal(false);
+      setNewFolderParentId(null);
       showSnackbar(`Folder "${folderName}" created`);
       
     } catch (error) {
@@ -198,7 +217,21 @@ const FileExplorerContent = forwardRef<FileExplorerContentHandles, FileExplorerC
         ok: success,
       });
     }
-  }, [isCreating, folders, currentFolderId, addOptimisticFolder, refreshFolders, removeOptimisticFolder]);
+  }, [
+    isCreating,
+    folders,
+    currentFolderId,
+    addOptimisticFolder,
+    refreshFolders,
+    removeOptimisticFolder,
+    expandedIds,
+    setExpandedFolders,
+  ]);
+
+  const handleCreateSubfolder = (folder: Folder) => {
+    setNewFolderParentId(folder.id);
+    setShowNewFolderModal(true);
+  };
 
   const handleRenameFolder = async (folder: Folder, newName: string) => {
     try {
@@ -284,7 +317,10 @@ const FileExplorerContent = forwardRef<FileExplorerContentHandles, FileExplorerC
           title="Empty Folder"
           subtitle={`Create a new folder or import audio files to get started`}
           buttonText="+ New Folder"
-          onButtonPress={() => setShowNewFolderModal(true)}
+          onButtonPress={() => {
+            setNewFolderParentId(null);
+            setShowNewFolderModal(true);
+          }}
         />
       );
     }
@@ -360,6 +396,7 @@ const FileExplorerContent = forwardRef<FileExplorerContentHandles, FileExplorerC
                   hasChildren={hasChildren}
                   isExpanded={isExpanded}
                   onToggleExpand={handleToggle}
+                  onCreateSubfolder={handleCreateSubfolder}
                 />
               </View>
             );
@@ -398,8 +435,11 @@ const FileExplorerContent = forwardRef<FileExplorerContentHandles, FileExplorerC
       {/* New Folder Modal */}
       <NewFolderModal
         visible={showNewFolderModal}
-        onConfirm={handleCreateFolder}
-        onCancel={() => setShowNewFolderModal(false)}
+        onConfirm={(name) => handleCreateFolder(name, newFolderParentId ?? currentFolderId)}
+        onCancel={() => {
+          setShowNewFolderModal(false);
+          setNewFolderParentId(null);
+        }}
         isCreating={isCreating}
       />
 
