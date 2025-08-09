@@ -153,27 +153,20 @@ const FileExplorerContent = forwardRef<FileExplorerContentHandles, FileExplorerC
       // Emit local reconcile event for immediate UI update
       if (optimisticTempId) {
         console.log('local:reconcile', { tempId: optimisticTempId, realId: newFolder.id });
-        RecordingsStore.notifyStoreChanged(false, {
-          type: 'folders_local_reconcile',
-          payload: {
-            tempId: optimisticTempId,
-            real: newFolder,
-            timestamp: Date.now(),
-          },
+        replaceOptimisticFolder(optimisticTempId, {
+          ...newFolder,
+          subfolderCount: 0,
+          recordingCount: 0,
         });
+        await refreshFolders();
       }
-      
+
       // Clear watchdog timers on success
       if (watchdogTimeout) clearTimeout(watchdogTimeout);
       if (finalWatchdogTimeout) clearTimeout(finalWatchdogTimeout);
-      
+
       setShowNewFolderModal(false);
       showSnackbar(`Folder "${folderName}" created`);
-      
-      // Safety refetch after a short delay
-      setTimeout(() => {
-        refreshFolders();
-      }, 100);
       
     } catch (error) {
       console.error('❌ FileExplorerContent: Folder creation failed:', error);
