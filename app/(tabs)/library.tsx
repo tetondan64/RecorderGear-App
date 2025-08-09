@@ -66,14 +66,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   filterMenu: {
-    flexDirection: 'row',
+    flexDirection: 'column',
     alignSelf: 'flex-end',
     marginRight: 24,
     marginTop: 8,
     backgroundColor: 'rgba(0, 0, 0, 0.8)',
     borderRadius: 8,
     padding: 8,
-    gap: 8,
   },
   filterMenuButton: {
     width: 40,
@@ -82,6 +81,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255, 255, 255, 0.1)',
     alignItems: 'center',
     justifyContent: 'center',
+    marginVertical: 4,
   },
   viewToggle: {
     flexDirection: 'row',
