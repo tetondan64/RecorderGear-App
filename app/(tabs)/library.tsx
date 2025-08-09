@@ -3,7 +3,6 @@ import { View, FlatList, Alert, TouchableOpacity, StyleSheet, Text } from 'react
 import { Headphones, Plus, Trash2, Search, Filter, Calendar, Tag, Folder } from 'lucide-react-native';
 import { router } from 'expo-router';
 import Layout from '@/components/Layout';
-import Header from '@/components/Header';
 import EmptyState from '@/components/EmptyState';
 import FileCard from '@/components/FileCard';
 import SnackBar from '@/components/SnackBar';
@@ -30,7 +29,7 @@ import { AudioStorageService } from '@/services/audioStorage';
 const styles = StyleSheet.create({
   actionBar: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'flex-end',
     alignItems: 'center',
     paddingVertical: 16,
     paddingHorizontal: 24,
@@ -55,6 +54,7 @@ const styles = StyleSheet.create({
   },
   filterButtons: {
     flexDirection: 'row',
+    alignItems: 'center',
     gap: 16,
   },
   filterButton: {
@@ -345,13 +345,6 @@ export default function LibraryScreen() {
     <Layout>
       {/* Action Bar */}
       <View style={styles.actionBar}>
-        <TouchableOpacity 
-          style={styles.addButton}
-          onPress={handleImportFile}
-        >
-          <Plus size={28} color="#f4ad3d" strokeWidth={3} />
-        </TouchableOpacity>
-        
         <View style={styles.filterButtons}>
           <TouchableOpacity
             style={styles.filterButton}
@@ -364,6 +357,12 @@ export default function LibraryScreen() {
             onPress={() => setShowFilterMenu(prev => !prev)}
           >
             <Filter size={20} color={showFilterMenu ? "#f4ad3d" : "rgba(255, 255, 255, 0.7)"} strokeWidth={1.5} />
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.addButton}
+            onPress={handleImportFile}
+          >
+            <Plus size={28} color="#f4ad3d" strokeWidth={3} />
           </TouchableOpacity>
         </View>
       </View>
