@@ -35,6 +35,7 @@ interface FileCardProps {
   onSeek?: (fileId: string, time: number) => void;
   onShare?: (file: AudioFile) => void;
   stopPlaybackIfPlaying?: (fileId: string) => void;
+  collapsed?: boolean;
 }
 
 interface DropdownMenuProps {
@@ -188,7 +189,8 @@ export default function FileCard({
   onPlayPause, 
   onSeek,
   onShare,
-  stopPlaybackIfPlaying
+  stopPlaybackIfPlaying,
+  collapsed = false
 }: FileCardProps) {
   const [showDropdown, setShowDropdown] = useState(false);
   const [showDeleteAudioModal, setShowDeleteAudioModal] = useState(false);
@@ -609,11 +611,11 @@ export default function FileCard({
           <GestureDetector gesture={panGesture}>
             <Animated.View style={[styles.card, cardAnimatedStyle]}>
                 <BlurView intensity={18} style={styles.cardBlur}>
-                  <View style={styles.content}>
+                  <View style={[styles.content, collapsed && styles.collapsedContent]}>
                     {/* Main Content Container */}
                     <View style={styles.mainContentContainer}>
                       {/* Header Row with Darker Background */}
-                      <View style={styles.headerRowWrapper}>
+                      <View style={[styles.headerRowWrapper, collapsed && styles.collapsedHeaderRowWrapper]}>
                         <BlurView intensity={18} style={styles.headerRowBackground}>
                           <View style={styles.headerRow}>
                             <View style={styles.fileNameContainer}> 
@@ -646,12 +648,14 @@ export default function FileCard({
                           </View>
                         </BlurView>
                       </View>
-                      
+
+                  {!collapsed && (
+                    <>
                       {/* Status Badge and Metadata Row */}
                       <View style={styles.statusAndMetadataRow}>
                         <View style={styles.statusBadgeContainer}>
                           {file.hasTranscript ? (
-                            <TouchableOpacity 
+                            <TouchableOpacity
                               style={styles.statusBadge}
                               onPress={(e) => {
                                 e.stopPropagation();
@@ -695,18 +699,18 @@ export default function FileCard({
                           </Text>
                         </View>
                       </View>
-                      
+
                       {/* Tags Row */}
                       {fileTags.length > 0 && (
                         <View style={styles.tagsRow}>
                           <TagChips tags={fileTags} maxVisible={3} />
                         </View>
                       )}
-                      
+
                       {/* Playback Controls */}
                       <View style={styles.playbackRow}>
-                        <TouchableOpacity 
-                          style={styles.playButton} 
+                        <TouchableOpacity
+                          style={styles.playButton}
                           onPress={handlePlayPausePress}
                           activeOpacity={0.8}
                         >
@@ -740,13 +744,15 @@ export default function FileCard({
                           </View>
                         </View>
                       </View>
-                      
+                    </>
+                  )}
+
                     </View>
                   </View>
-                    {/* Feature Icons Row */}
-                    <View style={styles.featureBadgesRow}>
-                      <BlurView intensity={18} style={styles.featureBadgesBlur}>
-                        <View style={styles.featureBadgesInner}>
+                    {!collapsed && (
+                      <View style={styles.featureBadgesRow}>
+                        <BlurView intensity={18} style={styles.featureBadgesBlur}>
+                          <View style={styles.featureBadgesInner}>
                           <FileText 
                             size={26} 
                             color="rgba(255, 255, 255, 0.5)" 
@@ -771,16 +777,17 @@ export default function FileCard({
                             strokeWidth={1.5}
                             accessibilityLabel="Manage Folders"
                           />
-                          <Sparkles 
-                            size={26} 
-                            color="rgba(255, 255, 255, 0.5)" 
+                          <Sparkles
+                            size={26}
+                            color="rgba(255, 255, 255, 0.5)"
                             strokeWidth={1.5}
                             accessibilityLabel="AI Tools"
                           />
                         </View>
                       </BlurView>
                     </View>
-                    
+                    )}
+
                 </BlurView>
             </Animated.View>
           </GestureDetector>
@@ -944,6 +951,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 18,
   },
+  collapsedContent: {
+    paddingVertical: 0,
+  },
   mainContentContainer: {
     width: '100%',
   },
@@ -952,6 +962,10 @@ const styles = StyleSheet.create({
     marginTop: -18,      // Counteracts the paddingTop (part of paddingVertical: 18) from styles.content
     paddingBottom: 0,   // Adds space below the header, replacing the old marginBottom
     marginBottom: 16,
+  },
+  collapsedHeaderRowWrapper: {
+    marginTop: 0,
+    marginBottom: 0,
   },
   headerRowBackground: {
     flex: 1,

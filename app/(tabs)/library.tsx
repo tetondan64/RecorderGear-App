@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, FlatList, Alert, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, FlatList, Alert, TouchableOpacity, StyleSheet, Text } from 'react-native';
 import { Headphones, Plus, Trash2, Tag, Folder, Search, Calendar } from 'lucide-react-native';
 import { router } from 'expo-router';
 import Layout from '@/components/Layout';
@@ -65,6 +65,30 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  viewToggle: {
+    flexDirection: 'row',
+    alignSelf: 'center',
+    marginTop: 16,
+    marginBottom: 8,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    borderRadius: 8,
+  },
+  viewToggleButton: {
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+  },
+  viewToggleButtonActive: {
+    backgroundColor: 'rgba(244, 173, 61, 0.2)',
+  },
+  viewToggleButtonText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: 'rgba(255, 255, 255, 0.7)',
+  },
+  viewToggleButtonTextActive: {
+    color: '#f4ad3d',
+  },
 });
 
 export default function LibraryScreen() {
@@ -85,6 +109,7 @@ export default function LibraryScreen() {
   const [showDateModal, setShowDateModal] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [viewMode, setViewMode] = useState<'expanded' | 'retracted'>('expanded');
 
   const showSnackbar = (message: string) => {
     setSnackbarMessage(message);
@@ -336,7 +361,23 @@ export default function LibraryScreen() {
           </TouchableOpacity>
         </View>
       </View>
-      
+
+      {/* View Mode Toggle */}
+      <View style={styles.viewToggle}>
+        <TouchableOpacity
+          style={[styles.viewToggleButton, viewMode === 'expanded' && styles.viewToggleButtonActive]}
+          onPress={() => setViewMode('expanded')}
+        >
+          <Text style={[styles.viewToggleButtonText, viewMode === 'expanded' && styles.viewToggleButtonTextActive]}>Expanded</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.viewToggleButton, viewMode === 'retracted' && styles.viewToggleButtonActive]}
+          onPress={() => setViewMode('retracted')}
+        >
+          <Text style={[styles.viewToggleButtonText, viewMode === 'retracted' && styles.viewToggleButtonTextActive]}>Retracted</Text>
+        </TouchableOpacity>
+      </View>
+
       {/* Search Bar */}
       <SearchBar
         visible={showSearch}
@@ -424,6 +465,7 @@ export default function LibraryScreen() {
               onPlayPause={(fileId) => playPause(fileId)}
               onSeek={seekTo}
               stopPlaybackIfPlaying={stopPlaybackIfPlaying}
+              collapsed={viewMode === 'retracted'}
             />
           )}
           showsVerticalScrollIndicator={false}
