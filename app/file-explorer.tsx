@@ -9,6 +9,7 @@ import { FolderExplorerProvider } from '@/context/FolderExplorerContext';
 import FileExplorerContent, { FileExplorerContentHandles } from '@/components/FileExplorerContent';
 import { FoldersAdapter } from '@/services/foldersAdapter';
 import { AudioFile } from '@/types/audio';
+import { Folder } from '@/types/folder';
 import { RecordingsStore } from '@/data/recordingsStore';
 
 export default function FileExplorerScreen() {
