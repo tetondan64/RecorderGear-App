@@ -97,7 +97,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(244, 173, 61, 0.2)',
   },
   viewToggleButtonText: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '500',
     color: 'rgba(255, 255, 255, 0.7)',
   },
