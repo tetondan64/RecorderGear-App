@@ -29,7 +29,7 @@ import { AudioStorageService } from '@/services/audioStorage';
 const styles = StyleSheet.create({
   actionBar: {
     flexDirection: 'row',
-    justifyContent: 'flex-end',
+    justifyContent: 'space-between',
     alignItems: 'center',
     paddingVertical: 16,
     paddingHorizontal: 24,
@@ -87,9 +87,6 @@ const styles = StyleSheet.create({
   },
   viewToggle: {
     flexDirection: 'row',
-    alignSelf: 'center',
-    marginTop: 16,
-    marginBottom: 8,
     backgroundColor: 'rgba(255, 255, 255, 0.1)',
     borderRadius: 8,
   },
@@ -345,6 +342,20 @@ export default function LibraryScreen() {
     <Layout>
       {/* Action Bar */}
       <View style={styles.actionBar}>
+        <View style={styles.viewToggle}>
+          <TouchableOpacity
+            style={[styles.viewToggleButton, viewMode === 'expanded' && styles.viewToggleButtonActive]}
+            onPress={() => setViewMode('expanded')}
+          >
+            <Text style={[styles.viewToggleButtonText, viewMode === 'expanded' && styles.viewToggleButtonTextActive]}>Expanded</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.viewToggleButton, viewMode === 'retracted' && styles.viewToggleButtonActive]}
+            onPress={() => setViewMode('retracted')}
+          >
+            <Text style={[styles.viewToggleButtonText, viewMode === 'retracted' && styles.viewToggleButtonTextActive]}>Retracted</Text>
+          </TouchableOpacity>
+        </View>
         <View style={styles.filterButtons}>
           <TouchableOpacity
             style={styles.filterButton}
@@ -408,22 +419,6 @@ export default function LibraryScreen() {
           </TouchableOpacity>
         </View>
       )}
-
-      {/* View Mode Toggle */}
-      <View style={styles.viewToggle}>
-        <TouchableOpacity
-          style={[styles.viewToggleButton, viewMode === 'expanded' && styles.viewToggleButtonActive]}
-          onPress={() => setViewMode('expanded')}
-        >
-          <Text style={[styles.viewToggleButtonText, viewMode === 'expanded' && styles.viewToggleButtonTextActive]}>Expanded</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.viewToggleButton, viewMode === 'retracted' && styles.viewToggleButtonActive]}
-          onPress={() => setViewMode('retracted')}
-        >
-          <Text style={[styles.viewToggleButtonText, viewMode === 'retracted' && styles.viewToggleButtonTextActive]}>Retracted</Text>
-        </TouchableOpacity>
-      </View>
 
       {/* Search Bar */}
       <SearchBar
