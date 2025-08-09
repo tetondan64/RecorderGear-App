@@ -158,7 +158,7 @@ const FileExplorerContent = forwardRef<FileExplorerContentHandles, FileExplorerC
           subfolderCount: 0,
           recordingCount: 0,
         });
-        await refreshFolders();
+        setTimeout(() => refreshFolders(), 500);
       }
 
       // Clear watchdog timers on success
