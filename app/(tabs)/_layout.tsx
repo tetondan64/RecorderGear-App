@@ -19,6 +19,7 @@ export default function TabLayout() {
           tabBarHideOnKeyboard: true,
           tabBarActiveTintColor: '#f4ad3d',
           tabBarInactiveTintColor: 'rgba(255, 255, 255, 0.7)',
+           tabBarItemStyle: { flex: 1 },
           tabBarBackground: () => (
             <LinearGradient
               colors={['rgba(15,23,42,0.95)', 'rgba(30,41,59,0.95)']}
