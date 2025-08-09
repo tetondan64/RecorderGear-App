@@ -278,13 +278,20 @@ const FileExplorerContent = forwardRef<FileExplorerContentHandles, FileExplorerC
     }
     
     if (!hasContent) {
+      const isRoot = currentFolderId === null;
       return (
         <EmptyState
-          icon={<Plus size={48} color="#f4ad3d" strokeWidth={1.5} />}
           title="Empty Folder"
-          subtitle={`Create a new folder or import audio files to get started`}
+          subtitle={
+            isRoot
+              ? 'Open Library to import audio files.'
+              : 'Create a new folder or import audio files to get started'
+          }
           buttonText="+ New Folder"
           onButtonPress={() => setShowNewFolderModal(true)}
+          {...(isRoot
+            ? {}
+            : { icon: <Plus size={48} color="#f4ad3d" strokeWidth={1.5} /> })}
         />
       );
     }
