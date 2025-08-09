@@ -1,5 +1,10 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, FlatList, Alert } from 'react-native';
+import React, {
+  useState,
+  useCallback,
+  forwardRef,
+  useImperativeHandle,
+} from 'react';
+import { View, Text, StyleSheet, FlatList, Alert } from 'react-native';
 import { router } from 'expo-router';
 import { Plus } from 'lucide-react-native';
 import FolderCard from '@/components/FolderCard';
@@ -23,17 +28,27 @@ interface FileExplorerContentProps {
   onFolderPress: (folder: Folder) => void;
 }
 
-export default function FileExplorerContent({
-  recordings,
-  recordingsLoading,
-  pathLoading,
-  currentFolderId,
-  onFolderPress, // This prop is now handled internally by useFolderExplorer
-}: FileExplorerContentProps) {
+export interface FileExplorerContentHandles {
+  openNewFolderModal: () => void;
+}
+
+const FileExplorerContent = forwardRef<FileExplorerContentHandles, FileExplorerContentProps>(
+  ({
+    recordings,
+    recordingsLoading,
+    pathLoading,
+    currentFolderId,
+    onFolderPress, // This prop is now handled internally by useFolderExplorer
+  },
+  ref) => {
   const [showNewFolderModal, setShowNewFolderModal] = useState(false);
   const [snackbarVisible, setSnackbarVisible] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState('');
   const [isCreating, setIsCreating] = useState(false);
+
+  useImperativeHandle(ref, () => ({
+    openNewFolderModal: () => setShowNewFolderModal(true),
+  }));
 
   const { 
     items: folders,
@@ -367,7 +382,9 @@ export default function FileExplorerContent({
       />
     </View>
   );
-}
+});
+
+export default FileExplorerContent;
 
 const styles = StyleSheet.create({
   container: {
