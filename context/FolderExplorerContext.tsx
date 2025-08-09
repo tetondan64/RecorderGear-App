@@ -10,7 +10,14 @@ interface OptimisticFolder extends Folder {
   recordingCount: number;
 }
 
-type FolderItem = FolderWithCounts | OptimisticFolder;
+// Real folders may be temporarily kept if the backend hasn't yet returned them.
+// `staleAt` marks when we last failed to see them in a refetch so a later
+// refresh can reconcile or purge them.
+interface TrackedFolder extends FolderWithCounts {
+  staleAt?: number;
+}
+
+type FolderItem = OptimisticFolder | TrackedFolder;
 
 interface FolderExplorerContextType {
   parentId: string | null;
@@ -47,6 +54,9 @@ export function FolderExplorerProvider({ parentId, children }: FolderExplorerPro
     return str.trim().toLowerCase();
   };
 
+  // How long to keep a folder that failed to appear in a refetch before dropping it.
+  const STALE_TTL = 5000; // ms
+
   const refetch = useCallback(async () => {
     if (!isMountedRef.current) return;
     
@@ -60,28 +70,62 @@ export function FolderExplorerProvider({ parentId, children }: FolderExplorerPro
       
       if (!isMountedRef.current) return;
       
-      // Reconcile with optimistic items
+      // Reconcile with optimistic and previously fetched items
       setItems(prevItems => {
-        const optimisticItems = prevItems.filter(item => 'pending' in item && item.pending);
-        const realFolders = foldersWithCounts;
-        
+        const now = Date.now();
+
+        const optimisticItems = prevItems.filter(
+          item => 'pending' in item && item.pending
+        ) as OptimisticFolder[];
+
+        const prevReal = prevItems.filter(
+          item => !('pending' in item && item.pending)
+        ) as TrackedFolder[];
+
+        const realFolders = foldersWithCounts as TrackedFolder[];
+
         // Remove optimistic items that now exist as real folders
         const reconciledOptimistic = optimisticItems.filter(optimistic => {
-          const matchingReal = realFolders.find(real => 
+          const matchingReal = realFolders.find(real =>
             normalizeString(real.name) === normalizeString(optimistic.name)
           );
-          
+
           if (matchingReal) {
-            console.log('🔄 FolderExplorerProvider: Auto-reconciling optimistic folder:', optimistic.tempId, '→', matchingReal.id);
+            console.log(
+              '🔄 FolderExplorerProvider: Auto-reconciling optimistic folder:',
+              optimistic.tempId,
+              '→',
+              matchingReal.id
+            );
             return false; // Remove optimistic item
           }
-          
+
           return true; // Keep optimistic item
         });
-        
-        // Combine real folders with remaining optimistic items
-        const combinedItems = [...realFolders, ...reconciledOptimistic];
-        
+
+        const realIds = new Set(realFolders.map(f => f.id));
+
+        // Preserve previously fetched items that the backend hasn't returned yet
+        const preservedMissing = prevReal.reduce<TrackedFolder[]>((acc, item) => {
+          if (realIds.has(item.id)) {
+            return acc; // Will be included from realFolders
+          }
+          if (item.staleAt && now - item.staleAt > STALE_TTL) {
+            return acc; // Drop if stale too long
+          }
+          acc.push(item.staleAt ? item : { ...item, staleAt: now });
+          return acc;
+        }, []);
+
+        // Real folders are fresh; clear any stale markers
+        const freshRealFolders = realFolders.map(f => ({ ...f, staleAt: undefined }));
+
+        const combinedItems = [
+          ...freshRealFolders,
+          ...reconciledOptimistic,
+          ...preservedMissing,
+        ];
+
         // Sort alphabetically
         return combinedItems.sort((a, b) => a.name.localeCompare(b.name));
       });
