@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { View, FlatList, Alert, TouchableOpacity, StyleSheet, Text } from 'react-native';
+import { BlurView } from 'expo-blur';
 import { Headphones, Plus, Trash2, Tag, Folder, Search, Calendar } from 'lucide-react-native';
 import { router } from 'expo-router';
 import Layout from '@/components/Layout';
-import Header from '@/components/Header';
 import EmptyState from '@/components/EmptyState';
 import FileCard from '@/components/FileCard';
 import SnackBar from '@/components/SnackBar';
@@ -67,16 +67,25 @@ const styles = StyleSheet.create({
   },
   viewToggle: {
     flexDirection: 'row',
+    position: 'absolute',
+    top: 90,
     alignSelf: 'center',
-    marginTop: 16,
-    marginBottom: 8,
+    zIndex: 50,
+    borderRadius: 9999,
+    paddingVertical: 4,
+    paddingHorizontal: 4,
+    overflow: 'hidden',
     backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    borderRadius: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
   },
   viewToggleButton: {
     paddingVertical: 6,
     paddingHorizontal: 12,
-    borderRadius: 8,
+    borderRadius: 9999,
   },
   viewToggleButtonActive: {
     backgroundColor: 'rgba(244, 173, 61, 0.2)',
@@ -363,7 +372,7 @@ export default function LibraryScreen() {
       </View>
 
       {/* View Mode Toggle */}
-      <View style={styles.viewToggle}>
+      <BlurView intensity={30} tint="dark" style={styles.viewToggle}>
         <TouchableOpacity
           style={[styles.viewToggleButton, viewMode === 'expanded' && styles.viewToggleButtonActive]}
           onPress={() => setViewMode('expanded')}
@@ -376,7 +385,7 @@ export default function LibraryScreen() {
         >
           <Text style={[styles.viewToggleButtonText, viewMode === 'retracted' && styles.viewToggleButtonTextActive]}>Retracted</Text>
         </TouchableOpacity>
-      </View>
+      </BlurView>
 
       {/* Search Bar */}
       <SearchBar
