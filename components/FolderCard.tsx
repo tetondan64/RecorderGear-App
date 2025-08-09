@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Modal } from 'react-native';
 import { BlurView } from 'expo-blur';
-import { Folder, CreditCard as Edit3, Trash2, Lock, ChevronRight, X, Plus } from 'lucide-react-native';
+
 import { Folder as FolderType } from '@/types/folder';
 import ConfirmModal from './ConfirmModal';
 import RenameModal from './RenameModal';
@@ -110,12 +110,11 @@ export default function FolderCard({
                     }}
                     style={styles.chevronButton}
                   >
-                    <ChevronRight
-                      size={20}
-                      color="#FFFFFF"
-                      strokeWidth={1.5}
-                      style={{ transform: [{ rotate: isExpanded ? '90deg' : '0deg' }] }}
-                    />
+                    {isExpanded ? (
+                      <ChevronUp size={20} color="#FFFFFF" strokeWidth={1.5} />
+                    ) : (
+                      <ChevronDown size={20} color="#FFFFFF" strokeWidth={1.5} />
+                    )}
                   </TouchableOpacity>
                 )}
                 <View style={[styles.folderIconContainer, isPending && styles.pendingIconContainer]}>
