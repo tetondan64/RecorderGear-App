@@ -242,6 +242,7 @@ export function FolderExplorerProvider({ parentId, children }: FolderExplorerPro
       console.log('🎯 FolderExplorerProvider: Event affects current parent');
       if (op === 'delete' && eventParentId === parentId) {
         setItems(prev => prev.filter(item => !('id' in item && item.id === id)));
+        pendingDeletedIds.current.add(id);
         debouncedRefetch();
         return;
       }
