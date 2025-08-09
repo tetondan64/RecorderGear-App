@@ -143,6 +143,10 @@ export class AudioStorageService {
   }
 
   private static async getAudioDuration(audioUri: string): Promise<number | undefined> {
+    if (Platform.OS !== 'web') {
+      return undefined;
+    }
+    
     return new Promise((resolve) => {
       const audio = new Audio(audioUri);
       audio.addEventListener('loadedmetadata', () => {
