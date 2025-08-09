@@ -82,7 +82,15 @@ export default function RenameModal({
       onRequestClose={onCancel}
     >
       <View style={styles.overlay}>
-        <BlurView intensity={20} style={[styles.backdrop, { backgroundColor: 'rgba(0, 0, 0, 0.35)' }]}>
+        <TouchableOpacity 
+          style={styles.backdrop} 
+          onPress={onCancel}
+          activeOpacity={1}
+        >
+          <BlurView intensity={20} style={[styles.backdropBlur, { backgroundColor: 'rgba(0, 0, 0, 0.35)' }]}>
+          </BlurView>
+        </TouchableOpacity>
+        <View style={styles.modalWrapper}>
           <View style={styles.modalContainer}>
             <BlurView intensity={20} style={[styles.modal, { backgroundColor: 'rgba(0, 0, 0, 0.35)' }]}>
               <View style={styles.content}>
@@ -132,7 +140,7 @@ export default function RenameModal({
               </View>
             </BlurView>
           </View>
-        </BlurView>
+        </View>
       </View>
     </Modal>
   );
@@ -142,8 +150,19 @@ const styles = StyleSheet.create({
   overlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    position: 'relative',
   },
   backdrop: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+  },
+  backdropBlur: {
+    flex: 1,
+  },
+  modalWrapper: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',

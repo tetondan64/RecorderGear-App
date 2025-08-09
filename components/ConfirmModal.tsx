@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Modal } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
+import { X } from 'lucide-react-native';
 
 interface ConfirmModalProps {
   visible: boolean;
@@ -32,11 +33,26 @@ export default function ConfirmModal({
       onRequestClose={onCancel}
     >
       <View style={styles.overlay}>
-        <BlurView intensity={20} style={[styles.backdrop, { backgroundColor: 'rgba(0, 0, 0, 0.35)' }]}>
+        <TouchableOpacity 
+          style={styles.backdrop} 
+          onPress={onCancel}
+          activeOpacity={1}
+        >
+          <BlurView intensity={20} style={[styles.backdropBlur, { backgroundColor: 'rgba(0, 0, 0, 0.35)' }]}>
+          </BlurView>
+        </TouchableOpacity>
+        <View style={styles.modalWrapper}>
           <View style={styles.modalContainer}>
             <BlurView intensity={20} style={[styles.modal, { backgroundColor: 'rgba(0, 0, 0, 0.35)' }]}>
               <View style={styles.content}>
-                <Text style={styles.title}>{title}</Text>
+                {/* Header with close button */}
+                <View style={styles.header}>
+                  <Text style={styles.title}>{title}</Text>
+                  <TouchableOpacity style={styles.closeButton} onPress={onCancel}>
+                    <X size={18} color="rgba(255, 255, 255, 0.7)" strokeWidth={1.5} />
+                  </TouchableOpacity>
+                </View>
+                
                 <Text style={styles.message}>{message}</Text>
                 
                 <View style={styles.buttonContainer}>
@@ -58,7 +74,7 @@ export default function ConfirmModal({
               </View>
             </BlurView>
           </View>
-        </BlurView>
+        </View>
       </View>
     </Modal>
   );
@@ -68,11 +84,23 @@ const styles = StyleSheet.create({
   overlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    position: 'relative',
   },
   backdrop: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+  },
+  backdropBlur: {
+    flex: 1,
+  },
+  modalWrapper: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
+    padding: 20,
   },
   modalContainer: {
     width: '90%',
@@ -88,12 +116,25 @@ const styles = StyleSheet.create({
   content: {
     padding: 24,
   },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
   title: {
     fontSize: 20,
     fontWeight: '700',
     color: '#FFFFFF',
-    marginBottom: 12,
-    textAlign: 'center',
+    flex: 1,
+  },
+  closeButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   message: {
     fontSize: 16,
