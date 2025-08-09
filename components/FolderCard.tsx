@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Alert, Modal, Pressable, GestureResponderEvent } from 'react-native';
 import { BlurView } from 'expo-blur';
-import { Folder, CreditCard as Edit3, Trash2, Lock, X } from 'lucide-react-native';
+import { Folder, CreditCard as Edit3, Trash2, Lock, X, ChevronRight, ChevronDown } from 'lucide-react-native';
 import { Folder as FolderType } from '@/types/folder';
 import ConfirmModal from './ConfirmModal';
 import RenameModal from './RenameModal';
@@ -15,6 +15,9 @@ interface FolderCardProps {
   onDelete: (folder: FolderType) => void;
   isReadOnlyDueToDepth?: boolean;
   isPending?: boolean;
+  hasChildren?: boolean;
+  isExpanded?: boolean;
+  onToggleExpand?: () => void;
 }
 
 export default function FolderCard({
@@ -26,6 +29,9 @@ export default function FolderCard({
   onDelete,
   isReadOnlyDueToDepth = false,
   isPending = false,
+  hasChildren = false,
+  isExpanded = false,
+  onToggleExpand = () => {},
 }: FolderCardProps) {
   const [showContextMenu, setShowContextMenu] = useState(false);
   const [showRenameModal, setShowRenameModal] = useState(false);
@@ -94,6 +100,22 @@ export default function FolderCard({
             {/* Header Row */}
             <View style={styles.headerRow}>
               <View style={styles.folderInfo}>
+                {hasChildren && (
+                  <TouchableOpacity
+                    onPress={(e) => {
+                      e.stopPropagation();
+                      onToggleExpand();
+                    }}
+                    style={styles.chevronButton}
+                  >
+                    <ChevronRight
+                      size={20}
+                      color="#FFFFFF"
+                      strokeWidth={1.5}
+                      style={{ transform: [{ rotate: isExpanded ? '90deg' : '0deg' }] }}
+                    />
+                  </TouchableOpacity>
+                )}
                 <View style={[styles.folderIconContainer, isPending && styles.pendingIconContainer]}>
                   <Folder size={24} color="#f4ad3d" strokeWidth={1.5} />
                   {isPending && (
@@ -111,10 +133,10 @@ export default function FolderCard({
                   </Text>
                 </View>
               </View>
-              
+
               {!isPending && (
-                <TouchableOpacity 
-                  style={styles.moreButton} 
+                <TouchableOpacity
+                  style={styles.moreButton}
                   onPress={handleMorePress}
                 >
                   <Text style={styles.moreIcon}>⋯</Text>
@@ -333,6 +355,10 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.4)',
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  chevronButton: {
+    padding: 4,
+    marginRight: 8,
   },
   contextMenu: {
     width: 160,

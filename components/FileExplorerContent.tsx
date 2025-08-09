@@ -45,6 +45,8 @@ const FileExplorerContent = forwardRef<FileExplorerContentHandles, FileExplorerC
   const [snackbarVisible, setSnackbarVisible] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState('');
   const [isCreating, setIsCreating] = useState(false);
+  const [expandedFolders, setExpandedFolders] = useState<Record<string, Folder[]>>({});
+  const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
 
   useImperativeHandle(ref, () => ({
     openNewFolderModal: () => setShowNewFolderModal(true),
@@ -287,9 +289,21 @@ const FileExplorerContent = forwardRef<FileExplorerContentHandles, FileExplorerC
       );
     }
 
+    const buildFolderItems = (folderList: Folder[], depth = 0): Array<{ type: 'folder'; data: Folder; depth: number }> => {
+      const items: Array<{ type: 'folder'; data: Folder; depth: number }> = [];
+      folderList.forEach(f => {
+        items.push({ type: 'folder', data: f, depth });
+        if (expandedIds.has(f.id)) {
+          const children = expandedFolders[f.id] || [];
+          items.push(...buildFolderItems(children, depth + 1));
+        }
+      });
+      return items;
+    };
+
     const allItems = [
-      ...folders.map(folder => ({ type: 'folder' as const, data: folder })),
-      ...recordings.map(recording => ({ type: 'recording' as const, data: recording })),
+      ...buildFolderItems(folders),
+      ...recordings.map(recording => ({ type: 'recording' as const, data: recording, depth: 0 })),
     ];
 
     return (
@@ -315,17 +329,39 @@ const FileExplorerContent = forwardRef<FileExplorerContentHandles, FileExplorerC
         }}
         renderItem={({ item }) => {
           if (item.type === 'folder') {
+            const isExpanded = expandedIds.has(item.data.id);
+            const hasChildren = item.data.subfolderCount > 0;
+            const handleToggle = async () => {
+              if (isExpanded) {
+                setExpandedIds(prev => {
+                  const next = new Set(prev);
+                  next.delete(item.data.id);
+                  return next;
+                });
+              } else {
+                if (!expandedFolders[item.data.id]) {
+                  const children = await adapter.listChildren(item.data.id);
+                  setExpandedFolders(prev => ({ ...prev, [item.data.id]: children }));
+                }
+                setExpandedIds(prev => new Set(prev).add(item.data.id));
+              }
+            };
             return (
-              <FolderCard
-                folder={item.data}
-                subfolderCount={item.data.subfolderCount}
-                recordingCount={item.data.recordingCount}
-                onPress={() => onFolderPress(item.data)}
-                onRename={handleRenameFolder}
-                onDelete={handleDeleteFolder}
-                isReadOnlyDueToDepth={item.data.isReadOnlyDueToDepth}
-                isPending={item.data.pending}
-              />
+              <View style={{ marginLeft: item.depth * 20 }}>
+                <FolderCard
+                  folder={item.data}
+                  subfolderCount={item.data.subfolderCount}
+                  recordingCount={item.data.recordingCount}
+                  onPress={() => onFolderPress(item.data)}
+                  onRename={handleRenameFolder}
+                  onDelete={handleDeleteFolder}
+                  isReadOnlyDueToDepth={item.data.isReadOnlyDueToDepth}
+                  isPending={item.data.pending}
+                  hasChildren={hasChildren}
+                  isExpanded={isExpanded}
+                  onToggleExpand={handleToggle}
+                />
+              </View>
             );
           } else {
             return (
