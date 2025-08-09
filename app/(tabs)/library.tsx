@@ -345,13 +345,13 @@ export default function LibraryScreen() {
             style={[styles.viewToggleButton, viewMode === 'expanded' && styles.viewToggleButtonActive]}
             onPress={() => setViewMode('expanded')}
           >
-            <Text style={[styles.viewToggleButtonText, viewMode === 'expanded' && styles.viewToggleButtonTextActive]}>Expanded</Text>
+            <Text style={[styles.viewToggleButtonText, viewMode === 'expanded' && styles.viewToggleButtonTextActive]}>Expand</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.viewToggleButton, viewMode === 'retracted' && styles.viewToggleButtonActive]}
             onPress={() => setViewMode('retracted')}
           >
-            <Text style={[styles.viewToggleButtonText, viewMode === 'retracted' && styles.viewToggleButtonTextActive]}>Retracted</Text>
+            <Text style={[styles.viewToggleButtonText, viewMode === 'retract' && styles.viewToggleButtonTextActive]}>Retracted</Text>
           </TouchableOpacity>
         </View>
         <View style={styles.filterButtons}>
