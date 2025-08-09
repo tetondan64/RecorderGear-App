@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, FlatList, Alert, TouchableOpacity, StyleSheet, Text } from 'react-native';
-import { Headphones, Plus, Trash2, Tag, Folder, Search, Calendar } from 'lucide-react-native';
+import { Headphones, Plus, Trash2, Search, Filter, Calendar, Tag, Folder } from 'lucide-react-native';
 import { router } from 'expo-router';
 import Layout from '@/components/Layout';
 import Header from '@/components/Header';
@@ -65,6 +65,24 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  filterMenu: {
+    flexDirection: 'row',
+    alignSelf: 'flex-end',
+    marginRight: 24,
+    marginTop: 8,
+    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+    borderRadius: 8,
+    padding: 8,
+    gap: 8,
+  },
+  filterMenuButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   viewToggle: {
     flexDirection: 'row',
     alignSelf: 'center',
@@ -107,6 +125,7 @@ export default function LibraryScreen() {
   const [showFolderDropdown, setShowFolderDropdown] = useState(false);
   const [showTagDropdown, setShowTagDropdown] = useState(false);
   const [showDateModal, setShowDateModal] = useState(false);
+  const [showFilterMenu, setShowFilterMenu] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [viewMode, setViewMode] = useState<'expanded' | 'retracted'>('expanded');
@@ -332,35 +351,62 @@ export default function LibraryScreen() {
         </TouchableOpacity>
         
         <View style={styles.filterButtons}>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.filterButton}
             onPress={handleSearchToggle}
           >
             <Search size={20} color={searchQuery ? "#3B82F6" : "rgba(255, 255, 255, 0.7)"} strokeWidth={1.5} />
           </TouchableOpacity>
-          
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.filterButton}
-            onPress={() => setShowDateModal(true)}
+            onPress={() => setShowFilterMenu(prev => !prev)}
           >
-            <Calendar size={20} color={hasDateFilter ? "#8B5CF6" : "rgba(255, 255, 255, 0.7)"} strokeWidth={1.5} />
+            <Filter size={20} color={showFilterMenu ? "#f4ad3d" : "rgba(255, 255, 255, 0.7)"} strokeWidth={1.5} />
           </TouchableOpacity>
-          
-          <TouchableOpacity 
-            style={styles.filterButton}
-            onPress={() => setShowTagDropdown(true)}
+        </View>
+      </View>
+
+      {showFilterMenu && (
+        <View style={styles.filterMenu}>
+          <TouchableOpacity
+            style={styles.filterMenuButton}
+            onPress={() => {
+              setShowDateModal(true);
+              setShowFilterMenu(false);
+            }}
           >
-            <Tag size={20} color={tagFilter.selectedTagIds.length > 0 ? "#f4ad3d" : "rgba(255, 255, 255, 0.7)"} strokeWidth={1.5} />
+            <Calendar
+              size={20}
+              color={hasDateFilter ? "#8B5CF6" : "rgba(255, 255, 255, 0.7)"}
+              strokeWidth={1.5}
+            />
           </TouchableOpacity>
-          
-          <TouchableOpacity 
-            style={styles.filterButton}
-            onPress={() => setShowFolderDropdown(true)}
+
+          <TouchableOpacity
+            style={styles.filterMenuButton}
+            onPress={() => {
+              setShowTagDropdown(true);
+              setShowFilterMenu(false);
+            }}
+          >
+            <Tag
+              size={20}
+              color={tagFilter.selectedTagIds.length > 0 ? "#f4ad3d" : "rgba(255, 255, 255, 0.7)"}
+              strokeWidth={1.5}
+            />
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.filterMenuButton}
+            onPress={() => {
+              setShowFolderDropdown(true);
+              setShowFilterMenu(false);
+            }}
           >
             <Folder size={20} color="rgba(255, 255, 255, 0.7)" strokeWidth={1.5} />
           </TouchableOpacity>
         </View>
-      </View>
+      )}
 
       {/* View Mode Toggle */}
       <View style={styles.viewToggle}>
