@@ -45,6 +45,7 @@ export function FolderExplorerProvider({ parentId, children }: FolderExplorerPro
   const adapter = FoldersAdapter.getInstance();
   const refetchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const isMountedRef = useRef(true);
+  const pendingDeletedIds = useRef<Set<string>>(new Set());
 
   const generateTempId = (): string => {
     return `tmp-${Date.now()}-${Math.random().toString(36).substring(2, 15)}`;
@@ -59,16 +60,27 @@ export function FolderExplorerProvider({ parentId, children }: FolderExplorerPro
 
   const refetch = useCallback(async () => {
     if (!isMountedRef.current) return;
-    
+
     try {
       setLoading(true);
       setError(null);
-      
+
       console.log('🔄 FolderExplorerProvider: Refetching folders for parentId:', parentId);
-      
-      const foldersWithCounts = await adapter.listChildren(parentId);
-      
+
+      const fetchedFolders = await adapter.listChildren(parentId);
+
       if (!isMountedRef.current) return;
+
+      const fetchedIds = new Set(fetchedFolders.map(f => f.id));
+      pendingDeletedIds.current.forEach(id => {
+        if (!fetchedIds.has(id)) {
+          pendingDeletedIds.current.delete(id);
+        }
+      });
+
+      const foldersWithCounts = fetchedFolders.filter(
+        f => !pendingDeletedIds.current.has(f.id)
+      );
       
       // Reconcile with optimistic and previously fetched items
       setItems(prevItems => {
@@ -143,15 +155,19 @@ export function FolderExplorerProvider({ parentId, children }: FolderExplorerPro
     }
   }, [parentId, adapter]);
 
-  const debouncedRefetch = useCallback(() => {
+  const scheduleRefetch = useCallback((delay: number) => {
     if (refetchTimeoutRef.current) {
       clearTimeout(refetchTimeoutRef.current);
     }
-    
+
     refetchTimeoutRef.current = setTimeout(() => {
       refetch();
-    }, 50); // 50ms debounce
+    }, delay);
   }, [refetch]);
+
+  const debouncedRefetch = useCallback(() => {
+    scheduleRefetch(50);
+  }, [scheduleRefetch]);
 
   const addOptimisticFolder = useCallback((name: string): string => {
     const tempId = generateTempId();
@@ -248,7 +264,7 @@ export function FolderExplorerProvider({ parentId, children }: FolderExplorerPro
 
       debouncedRefetch();
     }
-  }, [parentId, items, debouncedRefetch, replaceOptimisticFolder]);
+  }, [parentId, items, debouncedRefetch, replaceOptimisticFolder, scheduleRefetch]);
 
   // Subscribe to folder events
   useEffect(() => {
