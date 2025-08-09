@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, FlatList, Alert } from 'react-native';
 import { router } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
@@ -6,7 +6,7 @@ import { ArrowLeft, Plus, Chrome as Home, ChevronRight } from 'lucide-react-nati
 import { BlurView } from 'expo-blur';
 import Layout from '@/components/Layout';
 import { FolderExplorerProvider } from '@/context/FolderExplorerContext';
-import FileExplorerContent from '@/components/FileExplorerContent';
+import FileExplorerContent, { FileExplorerContentHandles } from '@/components/FileExplorerContent';
 import { FoldersAdapter } from '@/services/foldersAdapter';
 import { AudioFile } from '@/types/audio';
 import { RecordingsStore } from '@/data/recordingsStore';
@@ -19,6 +19,7 @@ export default function FileExplorerScreen() {
   const [folderPath, setFolderPath] = useState([]);
   const [snackbarMessage, setSnackbarMessage] = useState('');
   const [snackbarVisible, setSnackbarVisible] = useState(false);
+  const explorerRef = useRef<FileExplorerContentHandles>(null);
   
   const adapter = FoldersAdapter.getInstance();
 
@@ -143,9 +144,9 @@ export default function FileExplorerScreen() {
             <ArrowLeft size={24} color="#FFFFFF" strokeWidth={1.5} />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>File Explorer</Text>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.addButton}
-            onPress={() => { /* handled by FileExplorerContent */ }}
+            onPress={() => explorerRef.current?.openNewFolderModal()}
           >
             <Plus size={20} color="#f4ad3d" strokeWidth={1.5} />
           </TouchableOpacity>
@@ -158,6 +159,7 @@ export default function FileExplorerScreen() {
         <View style={styles.contentContainer}>
           <FolderExplorerProvider parentId={currentFolderId}> {/* Wrap with provider */}
             <FileExplorerContent
+              ref={explorerRef}
               recordings={recordings}
               recordingsLoading={recordingsLoading}
               pathLoading={pathLoading}
