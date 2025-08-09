@@ -171,16 +171,6 @@ export class FolderService {
       // Mark migration as complete
       await StorageService.setItem(this.MIGRATION_COMPLETE_FLAG, 'true');
 
-      // Emit event if any changes were made
-      if (foldersModified || recordingsModified) {
-        RecordingsStore.notifyStoreChanged(false, { 
-          type: 'migration_complete',
-          foldersModified,
-          recordingsModified,
-          folderCount: finalFolders.length
-        });
-      }
-
       console.log('✅ Folder migration completed:', {
         totalFolders: finalFolders.length,
         foldersModified,
