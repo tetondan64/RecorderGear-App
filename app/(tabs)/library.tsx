@@ -3,7 +3,6 @@ import { View, FlatList, Alert, TouchableOpacity, StyleSheet, Text } from 'react
 import { Headphones, Plus, Trash2, Search, Filter, Calendar, Tag, Folder } from 'lucide-react-native';
 import { router } from 'expo-router';
 import Layout from '@/components/Layout';
-import Header from '@/components/Header';
 import EmptyState from '@/components/EmptyState';
 import FileCard from '@/components/FileCard';
 import SnackBar from '@/components/SnackBar';
@@ -55,6 +54,7 @@ const styles = StyleSheet.create({
   },
   filterButtons: {
     flexDirection: 'row',
+    alignItems: 'center',
     gap: 16,
   },
   filterButton: {
@@ -87,9 +87,6 @@ const styles = StyleSheet.create({
   },
   viewToggle: {
     flexDirection: 'row',
-    alignSelf: 'center',
-    marginTop: 16,
-    marginBottom: 8,
     backgroundColor: 'rgba(255, 255, 255, 0.1)',
     borderRadius: 8,
   },
@@ -345,13 +342,20 @@ export default function LibraryScreen() {
     <Layout>
       {/* Action Bar */}
       <View style={styles.actionBar}>
-        <TouchableOpacity 
-          style={styles.addButton}
-          onPress={handleImportFile}
-        >
-          <Plus size={28} color="#f4ad3d" strokeWidth={3} />
-        </TouchableOpacity>
-        
+        <View style={styles.viewToggle}>
+          <TouchableOpacity
+            style={[styles.viewToggleButton, viewMode === 'expanded' && styles.viewToggleButtonActive]}
+            onPress={() => setViewMode('expanded')}
+          >
+            <Text style={[styles.viewToggleButtonText, viewMode === 'expanded' && styles.viewToggleButtonTextActive]}>Expanded</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.viewToggleButton, viewMode === 'retracted' && styles.viewToggleButtonActive]}
+            onPress={() => setViewMode('retracted')}
+          >
+            <Text style={[styles.viewToggleButtonText, viewMode === 'retracted' && styles.viewToggleButtonTextActive]}>Retracted</Text>
+          </TouchableOpacity>
+        </View>
         <View style={styles.filterButtons}>
           <TouchableOpacity
             style={styles.filterButton}
@@ -364,6 +368,12 @@ export default function LibraryScreen() {
             onPress={() => setShowFilterMenu(prev => !prev)}
           >
             <Filter size={20} color={showFilterMenu ? "#f4ad3d" : "rgba(255, 255, 255, 0.7)"} strokeWidth={1.5} />
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.addButton}
+            onPress={handleImportFile}
+          >
+            <Plus size={28} color="#f4ad3d" strokeWidth={3} />
           </TouchableOpacity>
         </View>
       </View>
@@ -409,22 +419,6 @@ export default function LibraryScreen() {
           </TouchableOpacity>
         </View>
       )}
-
-      {/* View Mode Toggle */}
-      <View style={styles.viewToggle}>
-        <TouchableOpacity
-          style={[styles.viewToggleButton, viewMode === 'expanded' && styles.viewToggleButtonActive]}
-          onPress={() => setViewMode('expanded')}
-        >
-          <Text style={[styles.viewToggleButtonText, viewMode === 'expanded' && styles.viewToggleButtonTextActive]}>Expanded</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.viewToggleButton, viewMode === 'retracted' && styles.viewToggleButtonActive]}
-          onPress={() => setViewMode('retracted')}
-        >
-          <Text style={[styles.viewToggleButtonText, viewMode === 'retracted' && styles.viewToggleButtonTextActive]}>Retracted</Text>
-        </TouchableOpacity>
-      </View>
 
       {/* Search Bar */}
       <SearchBar
