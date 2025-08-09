@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Modal } from 'react-native';
 import { BlurView } from 'expo-blur';
-
+import { Folder, CreditCard as Edit3, Trash2, Lock, ChevronRight, X } from 'lucide-react-native';
 import { Folder as FolderType } from '@/types/folder';
 import ConfirmModal from './ConfirmModal';
 import RenameModal from './RenameModal';
@@ -13,7 +13,6 @@ interface FolderCardProps {
   onPress: () => void;
   onRename: (folder: FolderType, newName: string) => void;
   onDelete: (folder: FolderType) => void;
-  onCreateSubfolder: (folder: FolderType) => void;
   isReadOnlyDueToDepth?: boolean;
   isPending?: boolean;
   hasChildren?: boolean;
@@ -28,7 +27,6 @@ export default function FolderCard({
   onPress,
   onRename,
   onDelete,
-  onCreateSubfolder,
   isReadOnlyDueToDepth = false,
   isPending = false,
   hasChildren = false,
@@ -110,11 +108,12 @@ export default function FolderCard({
                     }}
                     style={styles.chevronButton}
                   >
-                    {isExpanded ? (
-                      <ChevronUp size={20} color="#FFFFFF" strokeWidth={1.5} />
-                    ) : (
-                      <ChevronDown size={20} color="#FFFFFF" strokeWidth={1.5} />
-                    )}
+                    <ChevronRight
+                      size={20}
+                      color="#FFFFFF"
+                      strokeWidth={1.5}
+                      style={{ transform: [{ rotate: isExpanded ? '90deg' : '0deg' }] }}
+                    />
                   </TouchableOpacity>
                 )}
                 <View style={[styles.folderIconContainer, isPending && styles.pendingIconContainer]}>
@@ -181,17 +180,6 @@ export default function FolderCard({
                           <X size={18} color="rgba(255, 255, 255, 0.7)" strokeWidth={1.5} />
                         </TouchableOpacity>
                       </View>
-
-                      <TouchableOpacity
-                        style={styles.contextMenuItem}
-                        onPress={() => {
-                          setShowContextMenu(false);
-                          onCreateSubfolder(folder);
-                        }}
-                      >
-                        <Plus size={18} color="rgba(255, 255, 255, 0.7)" strokeWidth={1.5} />
-                        <Text style={styles.contextMenuText}>Create Subfolder</Text>
-                      </TouchableOpacity>
 
                       <TouchableOpacity
                         style={styles.contextMenuItem}
