@@ -6,6 +6,7 @@ import { ArrowLeft, Plus, Chrome as Home, ChevronRight } from 'lucide-react-nati
 import { BlurView } from 'expo-blur';
 import Layout from '@/components/Layout';
 import { FolderExplorerProvider } from '@/context/FolderExplorerContext';
+import { FolderExplorerProvider } from '@/context/FolderExplorerContext';
 import FileExplorerContent, { FileExplorerContentHandles } from '@/components/FileExplorerContent';
 import { FoldersAdapter } from '@/services/foldersAdapter';
 import { AudioFile } from '@/types/audio';
@@ -18,8 +19,8 @@ export default function FileExplorerScreen() {
   const [recordingsLoading, setRecordingsLoading] = useState(true);
   const [pathLoading, setPathLoading] = useState(true);
   const [folderPath, setFolderPath] = useState([]);
-  const [snackbarMessage, setSnackbarMessage] = useState('');
   const [snackbarVisible, setSnackbarVisible] = useState(false);
+  const [snackbarMessage, setSnackbarMessage] = useState('');
   const explorerRef = useRef<FileExplorerContentHandles>(null);
   
   const adapter = FoldersAdapter.getInstance();
@@ -53,6 +54,7 @@ export default function FileExplorerScreen() {
       
       console.log('🔍 FileExplorer: Loaded data:', {
         recordingsCount: recordingsData.length,
+        pathLength: pathData.length
       });
       
       setRecordings(recordingsData);
@@ -68,14 +70,10 @@ export default function FileExplorerScreen() {
 
   const loadRecordings = async () => {
     try {
-      setRecordingsLoading(true);
       const recordingsData = await adapter.getRecordingsInFolder(currentFolderId);
       setRecordings(recordingsData);
     } catch (error) {
       console.error('Failed to load recordings:', error);
-      Alert.alert('Error', 'Failed to load recordings');
-    } finally {
-      setRecordingsLoading(false);
     }
   };
 
