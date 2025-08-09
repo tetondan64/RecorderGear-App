@@ -351,7 +351,7 @@ export default function LibraryScreen() {
             style={[styles.viewToggleButton, viewMode === 'retracted' && styles.viewToggleButtonActive]}
             onPress={() => setViewMode('retracted')}
           >
-            <Text style={[styles.viewToggleButtonText, viewMode === 'retract' && styles.viewToggleButtonTextActive]}>Retracted</Text>
+            <Text style={[styles.viewToggleButtonText, viewMode === 'retracted' && styles.viewToggleButtonTextActive]}>Retract</Text>
           </TouchableOpacity>
         </View>
         <View style={styles.filterButtons}>
