@@ -1,5 +1,14 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Modal, Alert, Platform } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  TouchableWithoutFeedback,
+  Modal,
+  Alert,
+  Platform,
+} from 'react-native';
 import { router } from 'expo-router';
 import { BlurView } from 'expo-blur';
 import { FileAudio, MoveHorizontal as MoreHorizontal, Play, Pause, Share, CreditCard as Edit3, Tag as TagIcon, FolderOpen, Trash2, CircleCheck as CheckCircle, FileText, File, Sparkles, Bot } from 'lucide-react-native';
@@ -39,6 +48,7 @@ interface FileCardProps {
 
 interface DropdownMenuProps {
   visible: boolean;
+  anchorPosition: { x: number; y: number; width: number; height: number } | null;
   onClose: () => void;
   onTranscribe: () => void;
   onShare: () => void;
@@ -60,20 +70,21 @@ interface SwipeAction {
   onPress: () => void;
 }
 
-function DropdownMenu({ 
-  visible, 
-  onClose, 
+function DropdownMenu({
+  visible,
+  anchorPosition,
+  onClose,
   onTranscribe,
   onViewTranscript,
-  onShare, 
-  onRename, 
-  onTag, 
-  onMove, 
+  onShare,
+  onRename,
+  onTag,
+  onMove,
   onDeleteAudio,
   onDeleteTranscription,
   hasTranscript
 }: DropdownMenuProps) {
-  if (!visible) return null;
+  if (!visible || !anchorPosition) return null;
 
   const menuItems = [
     {
@@ -130,48 +141,62 @@ function DropdownMenu({
   return (
     <Modal
       visible={visible}
-      transparent={true}
+      transparent
       animationType="fade"
       onRequestClose={onClose}
     >
-      <TouchableOpacity style={styles.dropdownOverlay} onPress={onClose}>
-        <View style={styles.dropdownContainer}>
-          <BlurView intensity={40} style={styles.dropdownMenu}>
-            {menuItems.map((item, index) => (
-              <TouchableOpacity
-                key={item.id}
+      <TouchableWithoutFeedback
+        onPress={onClose}
+        accessibilityRole="button"
+        accessibilityLabel="Dismiss menu"
+      >
+        <View style={styles.menuOverlay} />
+      </TouchableWithoutFeedback>
+      <BlurView
+        intensity={40}
+        style={[
+          styles.dropdownMenu,
+          { top: anchorPosition.y + anchorPosition.height, left: anchorPosition.x },
+        ]}
+        accessible
+        accessibilityRole="menu"
+      >
+        {menuItems.map((item, index) => (
+          <TouchableOpacity
+            key={item.id}
+            style={[
+              styles.dropdownItem,
+              item.isPrimary && styles.dropdownItemPrimary,
+              item.isTranscribed && styles.dropdownItemTranscribed,
+              index === menuItems.length - 1 && styles.dropdownItemLast,
+              item.isDisabled && styles.dropdownItemDisabled,
+            ]}
+            onPress={() => {
+              if (!item.isDisabled) {
+                item.onPress();
+                onClose();
+              }
+            }}
+            disabled={item.isDisabled}
+            accessibilityRole="menuitem"
+          >
+            <View style={styles.dropdownItemContent}>
+              {item.icon}
+              <Text
                 style={[
-                  styles.dropdownItem,
-                  item.isPrimary && styles.dropdownItemPrimary,
-                  item.isTranscribed && styles.dropdownItemTranscribed,
-                  index === menuItems.length - 1 && styles.dropdownItemLast,
-                  item.isDisabled && styles.dropdownItemDisabled,
+                  styles.dropdownItemText,
+                  item.isPrimary && styles.dropdownItemTextPrimary,
+                  item.isTranscribed && styles.dropdownItemTextTranscribed,
+                  item.isDanger && styles.dropdownItemTextDanger,
                 ]}
-                onPress={() => {
-                  if (!item.isDisabled) {
-                    item.onPress();
-                    onClose();
-                  }
-                }}
-                disabled={item.isDisabled}
               >
-                <View style={styles.dropdownItemContent}>
-                  {item.icon}
-                  <Text style={[
-                    styles.dropdownItemText,
-                    item.isPrimary && styles.dropdownItemTextPrimary,
-                    item.isTranscribed && styles.dropdownItemTextTranscribed,
-                    item.isDanger && styles.dropdownItemTextDanger,
-                  ]}>
-                    {item.label}
-                  </Text>
-                </View>
-                {item.isPrimary && <View style={styles.primaryGlow} />}
-              </TouchableOpacity>
-            ))}
-          </BlurView>
-        </View>
-      </TouchableOpacity>
+                {item.label}
+              </Text>
+            </View>
+            {item.isPrimary && <View style={styles.primaryGlow} />}
+          </TouchableOpacity>
+        ))}
+      </BlurView>
     </Modal>
   );
 }
@@ -198,6 +223,13 @@ export default function FileCard({
   const [showFolderPickerModal, setShowFolderPickerModal] = useState(false);
   const [isIconPressed, setIsIconPressed] = useState(false);
   const [isProgressDragging, setIsProgressDragging] = useState(false);
+  const [menuPosition, setMenuPosition] = useState<{
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  } | null>(null);
+  const moreButtonRef = useRef<View>(null);
   const [localCurrentTime, setLocalCurrentTime] = useState(0);
   const [fileTags, setFileTags] = useState<Tag[]>([]);
 
@@ -463,7 +495,10 @@ export default function FileCard({
 
   const handleMorePress = (e: any) => {
     e.stopPropagation();
-    setShowDropdown(true);
+    moreButtonRef.current?.measureInWindow((x, y, width, height) => {
+      setMenuPosition({ x, y, width, height });
+      setShowDropdown(true);
+    });
   };
 
   const handleProgressPress = (event: any) => {
@@ -635,10 +670,13 @@ export default function FileCard({
                             </View>
                             
                             <View style={styles.rightIcons}>
-                              <TouchableOpacity 
-                                style={styles.moreButton} 
+                              <TouchableOpacity
+                                ref={moreButtonRef}
+                                style={styles.moreButton}
                                 onPress={handleMorePress}
                                 activeOpacity={0.7}
+                                accessibilityLabel="More options"
+                                accessibilityRole="button"
                               >
                                 <Text style={styles.moreIcon}>⋯</Text>
                               </TouchableOpacity>
@@ -790,31 +828,41 @@ export default function FileCard({
       {/* Dropdown Menu */}
       <DropdownMenu
         visible={showDropdown}
-        onClose={() => setShowDropdown(false)}
+        anchorPosition={menuPosition}
+        onClose={() => {
+          setShowDropdown(false);
+          setMenuPosition(null);
+        }}
         onTranscribe={handleTranscribeAction}
         onViewTranscript={onPress}
         onShare={() => {
           setShowDropdown(false);
+          setMenuPosition(null);
           onShare?.(file);
         }}
         onRename={() => {
           setShowDropdown(false);
+          setMenuPosition(null);
           setShowRenameModal(true);
         }}
         onTag={() => {
           setShowDropdown(false);
+          setMenuPosition(null);
           setShowTagManagerModal(true);
         }}
         onMove={() => {
           setShowDropdown(false);
+          setMenuPosition(null);
           setShowFolderPickerModal(true);
         }}
         onDeleteAudio={() => {
           setShowDropdown(false);
+          setMenuPosition(null);
           setShowDeleteAudioModal(true);
         }}
         onDeleteTranscription={() => {
           setShowDropdown(false);
+          setMenuPosition(null);
           setShowDeleteTranscriptionModal(true);
         }}
         hasTranscript={file.hasTranscript || false}
@@ -1193,19 +1241,12 @@ const styles = StyleSheet.create({
     justifyContent: 'space-around',
   },
   // Dropdown styles
-  dropdownOverlay: {
-    flex: 1,
+  menuOverlay: {
+    ...StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(0, 0, 0, 0.4)',
-    justifyContent: 'flex-start',
-    alignItems: 'center',
-    paddingTop: 100,
-  },
-  dropdownContainer: {
-    width: 200,
-    position: 'relative',
-    zIndex: 9999,
   },
   dropdownMenu: {
+    position: 'absolute',
     backgroundColor: 'rgba(0, 0, 0, 0.35)',
     borderRadius: 16,
     borderWidth: 1,
