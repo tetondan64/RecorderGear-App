@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import { BlurView } from 'expo-blur';
-import { Folder, MoveHorizontal as MoreHorizontal, CreditCard as Edit3, Trash2, Lock } from 'lucide-react-native';
+import { Folder, CreditCard as Edit3, Trash2, Lock } from 'lucide-react-native';
 import { Folder as FolderType } from '@/types/folder';
 import ConfirmModal from './ConfirmModal';
 import RenameModal from './RenameModal';
@@ -117,19 +117,10 @@ export default function FolderCard({
                   style={styles.moreButton} 
                   onPress={handleMorePress}
                 >
-                  <MoreHorizontal size={20} color="rgba(255, 255, 255, 0.7)" strokeWidth={1.5} />
+                  <Text style={styles.moreIcon}>⋯</Text>
                 </TouchableOpacity>
               )}
             </View>
-
-            {/* Metadata Row */}
-            {!isPending && folder.createdAt && (
-              <View style={styles.metadataRow}>
-                <Text style={styles.dateText}>
-                  Created {formatDate(folder.createdAt)}
-                </Text>
-              </View>
-            )}
           </View>
         </BlurView>
       </TouchableOpacity>
@@ -313,13 +304,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  metadataRow: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-  },
-  dateText: {
-    fontSize: 12,
-    color: 'rgba(255, 255, 255, 0.5)',
+  moreIcon: {
+    fontSize: 20,
+    color: 'rgba(255, 255, 255, 0.7)',
+    fontWeight: '900',
   },
   contextMenuOverlay: {
     position: 'absolute',
