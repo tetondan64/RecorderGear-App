@@ -218,29 +218,34 @@ export function FolderExplorerProvider({ parentId, children }: FolderExplorerPro
     console.log('events:create', { op, id, eventParentId, currentParentId: parentId });
 
     // Check if this event affects our current parent
-    const affectsCurrentParent = 
+    const affectsCurrentParent =
       eventParentId === parentId || // Direct child operation
       (op === 'move' && items.some(item => 'id' in item && item.id === id)); // Moving away from current parent
 
     if (affectsCurrentParent) {
       console.log('🎯 FolderExplorerProvider: Event affects current parent');
-      
+      if (op === 'delete' && eventParentId === parentId) {
+        setItems(prev => prev.filter(item => !('id' in item && item.id === id)));
+        debouncedRefetch();
+        return;
+      }
+
       // For create operations, try to reconcile with optimistic folders
       if (op === 'create' && eventParentId === parentId) {
         // Find matching optimistic folder by name
-        const optimisticItem = items.find(item => 
-          'pending' in item && 
-          item.pending && 
+        const optimisticItem = items.find(item =>
+          'pending' in item &&
+          item.pending &&
           normalizeString(item.name) === normalizeString(event.payload.name || '')
         );
-        
+
         if (optimisticItem && 'tempId' in optimisticItem) {
           console.log('🔄 FolderExplorerProvider: Found matching optimistic folder for reconciliation:', optimisticItem.tempId);
           debouncedRefetch();
           return;
         }
       }
-      
+
       debouncedRefetch();
     }
   }, [parentId, items, debouncedRefetch, replaceOptimisticFolder]);
