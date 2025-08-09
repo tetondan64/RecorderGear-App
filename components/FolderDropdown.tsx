@@ -13,13 +13,18 @@ interface FolderDropdownProps {
   selectedFolderId: string | null;
 }
 
-export default function FolderDropdown({ 
-  visible, 
-  onClose, 
+export default function FolderDropdown({
+  visible,
+  onClose,
   onFolderSelect,
-  selectedFolderId 
+  selectedFolderId
 }: FolderDropdownProps) {
-  const [folders, setFolders] = useState<FolderType[]>([]);
+  interface FolderItem {
+    folder: FolderType;
+    depth: number;
+  }
+
+  const [folders, setFolders] = useState<FolderItem[]>([]);
   const [showNewFolderModal, setShowNewFolderModal] = useState(false);
   const [loading, setLoading] = useState(false);
 
@@ -35,7 +40,29 @@ export default function FolderDropdown({
     try {
       setLoading(true);
       const allFolders = await adapter.getAllFolders();
-      setFolders(allFolders);
+
+      const grouped = allFolders.reduce<Record<string | null, FolderType[]>>((acc, folder) => {
+        const parentId = folder.parentId || null;
+        if (!acc[parentId]) acc[parentId] = [];
+        acc[parentId].push(folder);
+        return acc;
+      }, {});
+
+      Object.values(grouped).forEach(children =>
+        children.sort((a, b) => a.name.localeCompare(b.name))
+      );
+
+      const ordered: FolderItem[] = [];
+      const traverse = (parentId: string | null, depth: number) => {
+        const children = grouped[parentId] || [];
+        for (const child of children) {
+          ordered.push({ folder: child, depth });
+          traverse(child.id, depth + 1);
+        }
+      };
+
+      traverse(null, 0);
+      setFolders(ordered);
     } catch (error) {
       console.error('Failed to load folders:', error);
     } finally {
@@ -45,8 +72,8 @@ export default function FolderDropdown({
 
   const handleCreateFolder = async (folderName: string) => {
     try {
-      const newFolder = await adapter.create(folderName);
-      setFolders(prev => [...prev, newFolder].sort((a, b) => a.name.localeCompare(b.name)));
+      await adapter.create(folderName);
+      await loadFolders();
       setShowNewFolderModal(false);
     } catch (error) {
       throw error; // Let the modal handle the error display
@@ -118,21 +145,30 @@ export default function FolderDropdown({
               
               <FlatList
                 data={folders}
-                keyExtractor={(item) => item.id}
+                keyExtractor={(item) => item.folder.id}
                 renderItem={({ item }) => (
-                  <TouchableOpacity 
-                    style={[styles.folderItem, selectedFolderId === item.id && styles.selectedFolderItem]}
-                    onPress={() => handleFolderSelect(item)}
+                  <TouchableOpacity
+                    style={[
+                      styles.folderItem,
+                      selectedFolderId === item.folder.id && styles.selectedFolderItem,
+                      { paddingLeft: 16 + item.depth * 16 }
+                    ]}
+                    onPress={() => handleFolderSelect(item.folder)}
                   >
                     <View style={styles.folderItemLeft}>
                       <View style={styles.folderIcon}>
                         <Folder size={16} color="rgba(255, 255, 255, 0.6)" strokeWidth={1.5} />
                       </View>
-                      <Text style={[styles.folderName, selectedFolderId === item.id && styles.selectedFolderName]}>
-                        {item.name}
+                      <Text
+                        style={[
+                          styles.folderName,
+                          selectedFolderId === item.folder.id && styles.selectedFolderName
+                        ]}
+                      >
+                        {item.folder.name}
                       </Text>
                     </View>
-                    {selectedFolderId === item.id && (
+                    {selectedFolderId === item.folder.id && (
                       <Check size={16} color="#f4ad3d" strokeWidth={2} />
                     )}
                   </TouchableOpacity>
