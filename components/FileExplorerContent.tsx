@@ -14,6 +14,7 @@ import { useAudioPlayer } from '@/hooks/useAudioPlayer';
 import { TranscriptService } from '@/services/transcriptService';
 import { RecordingsStore } from '@/data/recordingsStore';
 import { useFolderExplorer } from '@/context/FolderExplorerContext';
+import { useFolderExplorer } from '@/context/FolderExplorerContext';
 
 interface FileExplorerContentProps {
   recordings: AudioFile[];
