@@ -32,7 +32,8 @@ export default function TabLayout() {
             height: 90 + insets.bottom,
             paddingBottom: 20 + insets.bottom,
             paddingTop: 15,
-            paddingHorizontal: 20,
+            paddingLeft: 30,
+            paddingRight: 10,
           },
         }}>
         <Tabs.Screen
