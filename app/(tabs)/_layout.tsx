@@ -1,8 +1,9 @@
 import { Tabs } from 'expo-router';
 import { useState } from 'react';
-import { StyleSheet, View, TouchableOpacity } from 'react-native';
+import { StyleSheet, View, TouchableOpacity, Text } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BlurView } from 'expo-blur';
+import { LinearGradient } from 'expo-linear-gradient';
 import { FileText, Mic, Bot, Menu } from 'lucide-react-native';
 import RightDrawer from '@/components/RightDrawer';
 
@@ -17,14 +18,21 @@ export default function TabLayout() {
           headerShown: false,
           tabBarHideOnKeyboard: true,
           tabBarActiveTintColor: '#f4ad3d',
-          tabBarInactiveTintColor: 'rgba(255, 255, 255, 0.6)',
+          tabBarInactiveTintColor: 'rgba(255, 255, 255, 0.7)',
+          tabBarBackground: () => (
+            <LinearGradient
+              colors={['rgba(15,23,42,0.95)', 'rgba(30,41,59,0.95)']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={StyleSheet.absoluteFill}
+            />
+          ),
           tabBarStyle: {
-            backgroundColor: 'rgba(15, 23, 42, 0.95)',
-            borderTopWidth: 1,
-            borderTopColor: 'rgba(255, 255, 255, 0.1)',
+            borderTopWidth: 0,
             height: 90 + insets.bottom,
             paddingBottom: 20 + insets.bottom,
             paddingTop: 15,
+            paddingHorizontal: 20,
           },
         }}>
         <Tabs.Screen
@@ -34,25 +42,26 @@ export default function TabLayout() {
           }}
         />
         <Tabs.Screen
+          name="record"
+          options={{
+            title: '',
+            tabBarButton: (props) => (
+              <TouchableOpacity {...props} style={styles.recordButtonWrapper}>
+                <View style={styles.recordButton}>
+                  <Mic size={20} color="#fff" strokeWidth={1.5} />
+                  <Text style={styles.recordButtonText}>Record</Text>
+                </View>
+              </TouchableOpacity>
+            ),
+          }}
+        />
+        <Tabs.Screen
           name="library"
           options={{
             title: 'Library',
             href: '/library',
             tabBarIcon: ({ size, color }) => (
               <FileText size={size} color={color} strokeWidth={1.5} />
-            ),
-          }}
-        />
-        <Tabs.Screen
-          name="record"
-          options={{
-            title: '',
-            tabBarIcon: ({ size, color, focused }) => (
-              <View style={[styles.fabContainer, focused && styles.fabContainerActive, styles.fabCentered]}>
-                <BlurView intensity={18} style={styles.fabBlur}>
-                  <Mic size={size} color={color} strokeWidth={1.5} />
-                </BlurView>
-              </View>
             ),
           }}
         />
@@ -98,30 +107,29 @@ export default function TabLayout() {
 }
 
 const styles = StyleSheet.create({
-  fabContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: 'rgba(244, 173, 61, 0.2)',
-    borderWidth: 2,
-    borderColor: 'rgba(244, 173, 61, 0.3)',
+  recordButtonWrapper: {
+    flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    overflow: 'hidden',
   },
-  fabContainerActive: {
-    backgroundColor: 'rgba(244, 173, 61, 0.4)',
-    borderColor: '#f4ad3d',
-  },
-  fabCentered: {
-    marginBottom: 0,
-    alignSelf: 'center',
-  },
-  fabBlur: {
-    width: '100%',
-    height: '100%',
+  recordButton: {
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: '#ef4444',
+    paddingHorizontal: 20,
+    height: 40,
+    borderRadius: 20,
+    shadowColor: '#ef4444',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.6,
+    shadowRadius: 6,
+    elevation: 6,
+  },
+  recordButtonText: {
+    color: '#fff',
+    marginLeft: 8,
+    fontWeight: '600',
   },
   hamburgerContainer: {
     flex: 1,
