@@ -55,7 +55,7 @@ const styles = StyleSheet.create({
   filterButtons: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 16,
+    gap: 8,
   },
   filterButton: {
     width: 40,
