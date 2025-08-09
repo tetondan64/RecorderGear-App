@@ -6,7 +6,6 @@ import { ArrowLeft, Plus, Chrome as Home, ChevronRight } from 'lucide-react-nati
 import { BlurView } from 'expo-blur';
 import Layout from '@/components/Layout';
 import { FolderExplorerProvider } from '@/context/FolderExplorerContext';
-import { FolderExplorerProvider } from '@/context/FolderExplorerContext';
 import FileExplorerContent, { FileExplorerContentHandles } from '@/components/FileExplorerContent';
 import { FoldersAdapter } from '@/services/foldersAdapter';
 import { AudioFile } from '@/types/audio';
