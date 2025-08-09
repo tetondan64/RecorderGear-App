@@ -38,12 +38,12 @@ export default function ConfirmModal({
           onPress={onCancel}
           activeOpacity={1}
         >
-          <BlurView intensity={20} style={[styles.backdropBlur, { backgroundColor: 'rgba(0, 0, 0, 0.35)' }]}>
-          </BlurView>
+          <BlurView intensity={20} style={[styles.backdropBlur, { backgroundColor: 'rgba(0, 0, 0, 0.35)' }]} />
         </TouchableOpacity>
         <View style={styles.modalWrapper}>
           <View style={styles.modalContainer}>
-            <BlurView intensity={20} style={[styles.modal, { backgroundColor: 'rgba(0, 0, 0, 0.35)' }]}>
+            <TouchableOpacity activeOpacity={1} onPress={(e) => e.stopPropagation()}>
+              <BlurView intensity={20} style={[styles.modal, { backgroundColor: 'rgba(0, 0, 0, 0.35)' }]}>
               <View style={styles.content}>
                 {/* Header with close button */}
                 <View style={styles.header}>
@@ -72,7 +72,8 @@ export default function ConfirmModal({
                   </TouchableOpacity>
                 </View>
               </View>
-            </BlurView>
+              </BlurView>
+            </TouchableOpacity>
           </View>
         </View>
       </View>
