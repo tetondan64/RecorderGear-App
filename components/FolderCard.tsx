@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Alert, Modal, Pressable, GestureResponderEvent } from 'react-native';
 import { BlurView } from 'expo-blur';
-import { Folder, CreditCard as Edit3, Trash2, Lock } from 'lucide-react-native';
+import { Folder, CreditCard as Edit3, Trash2, Lock, X } from 'lucide-react-native';
 import { Folder as FolderType } from '@/types/folder';
 import ConfirmModal from './ConfirmModal';
 import RenameModal from './RenameModal';
@@ -126,37 +126,54 @@ export default function FolderCard({
       </TouchableOpacity>
 
       {/* Context Menu */}
-      {showContextMenu && !isPending && (
-        <TouchableOpacity 
-          style={styles.contextMenuOverlay} 
-          onPress={() => setShowContextMenu(false)}
+      {!isPending && (
+        <Modal
+          visible={showContextMenu}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setShowContextMenu(false)}
         >
-          <View style={styles.contextMenu}>
-            <BlurView intensity={40} style={styles.contextMenuBlur}>
-              <TouchableOpacity
-                style={styles.contextMenuItem}
-                onPress={() => {
-                  setShowContextMenu(false);
-                  setShowRenameModal(true);
-                }}
-              >
-                <Edit3 size={16} color="rgba(255, 255, 255, 0.7)" strokeWidth={1.5} />
-                <Text style={styles.contextMenuText}>Rename</Text>
-              </TouchableOpacity>
-              
-              <TouchableOpacity
-                style={[styles.contextMenuItem, styles.contextMenuItemLast]}
-                onPress={() => {
-                  setShowContextMenu(false);
-                  setShowDeleteModal(true);
-                }}
-              >
-                <Trash2 size={16} color="#EF4444" strokeWidth={1.5} />
-                <Text style={[styles.contextMenuText, styles.contextMenuTextDanger]}>Delete</Text>
-              </TouchableOpacity>
-            </BlurView>
-          </View>
-        </TouchableOpacity>
+          <Pressable
+            style={styles.contextMenuOverlay}
+            onPress={() => setShowContextMenu(false)}
+          >
+            <Pressable
+              style={styles.contextMenu}
+              onPress={(e: GestureResponderEvent) => e.stopPropagation()}
+            >
+              <BlurView intensity={40} style={styles.contextMenuBlur}>
+                <TouchableOpacity
+                  style={styles.closeButton}
+                  onPress={() => setShowContextMenu(false)}
+                >
+                  <X size={16} color="rgba(255, 255, 255, 0.7)" strokeWidth={1.5} />
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.contextMenuItem}
+                  onPress={() => {
+                    setShowContextMenu(false);
+                    setShowRenameModal(true);
+                  }}
+                >
+                  <Edit3 size={16} color="rgba(255, 255, 255, 0.7)" strokeWidth={1.5} />
+                  <Text style={styles.contextMenuText}>Rename</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[styles.contextMenuItem, styles.contextMenuItemLast]}
+                  onPress={() => {
+                    setShowContextMenu(false);
+                    setShowDeleteModal(true);
+                  }}
+                >
+                  <Trash2 size={16} color="#EF4444" strokeWidth={1.5} />
+                  <Text style={[styles.contextMenuText, styles.contextMenuTextDanger]}>Delete</Text>
+                </TouchableOpacity>
+              </BlurView>
+            </Pressable>
+          </Pressable>
+        </Modal>
       )}
 
       {/* Rename Modal */}
@@ -310,15 +327,10 @@ const styles = StyleSheet.create({
     fontWeight: '900',
   },
   contextMenuOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
+    flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.4)',
     justifyContent: 'center',
     alignItems: 'center',
-    zIndex: 1000,
   },
   contextMenu: {
     width: 160,
@@ -329,6 +341,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.35)',
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.1)',
+    paddingTop: 32,
   },
   contextMenuItem: {
     flexDirection: 'row',
@@ -349,5 +362,11 @@ const styles = StyleSheet.create({
   },
   contextMenuTextDanger: {
     color: '#EF4444',
+  },
+  closeButton: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    padding: 4,
   },
 });
