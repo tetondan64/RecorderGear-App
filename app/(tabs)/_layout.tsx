@@ -22,6 +22,8 @@ export default function TabLayout() {
             backgroundColor: 'rgba(15, 23, 42, 0.95)',
             borderTopWidth: 1,
             borderTopColor: 'rgba(255, 255, 255, 0.1)',
+            borderTopLeftRadius: 0,
+            borderTopRightRadius: 0,
             height: 90 + insets.bottom,
             paddingBottom: 20 + insets.bottom,
             paddingTop: 15,
