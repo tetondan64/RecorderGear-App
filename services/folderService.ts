@@ -45,15 +45,6 @@ export class FolderService {
     return candidateName;
   }
 
-  private static async _saveAllFolders(folders: Folder[]): Promise<void> {
-    try {
-      await StorageService.setItem(this.UNIFIED_STORAGE_KEY, JSON.stringify(folders));
-    } catch (error) {
-      console.error('Failed to save folders:', error);
-      throw error;
-    }
-  }
-
   private static async performMigration(): Promise<void> {
     try {
       // Check if migration has already been completed
