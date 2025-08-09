@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, FlatList, Alert, TouchableOpacity, StyleSheet, Text } from 'react-native';
-import { Headphones, Plus, Trash2, Search, Filter, Calendar, Tag, Folder } from 'lucide-react-native';
+import { Headphones, Plus, Trash2, Search, ListFilter as Filter, Calendar, Tag, Folder } from 'lucide-react-native';
 import { router } from 'expo-router';
 import Layout from '@/components/Layout';
 import EmptyState from '@/components/EmptyState';
