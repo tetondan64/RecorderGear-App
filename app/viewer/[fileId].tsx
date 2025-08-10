@@ -8,10 +8,13 @@ import AudioPlayerModule from '@/components/AudioPlayerModule';
 import TranscriptBlock from '@/components/TranscriptBlock';
 import TranscriptSearch from '@/components/TranscriptSearch';
 import ConfirmModal from '../../components/ConfirmModal';
+import SummaryDropdown from '@/components/SummaryDropdown';
 import { AudioStorageService } from '@/services/audioStorage';
 import { TranscriptService } from '@/services/transcriptService';
+import { AudioSummaryService } from '@/services/audioSummaryService';
 import { AudioFile } from '@/types/audio';
 import { Transcript, TranscriptSegment } from '@/types/transcript';
+import { SummaryStyle, AudioSummary } from '@/types/summary';
 
 export default function ViewerScreen() {
   const { fileId } = useLocalSearchParams<{ fileId: string }>();
@@ -27,6 +30,10 @@ export default function ViewerScreen() {
   const [showSearch, setShowSearch] = useState(false);
   const [isUserScrolling, setIsUserScrolling] = useState(false);
   const [lastAutoScrollTime, setLastAutoScrollTime] = useState(0);
+  const [showSummaryDropdown, setShowSummaryDropdown] = useState(false);
+  const [selectedSummaryStyle, setSelectedSummaryStyle] = useState<SummaryStyle | null>(null);
+  const [currentSummary, setCurrentSummary] = useState<AudioSummary | null>(null);
+  const [summaryLoading, setSummaryLoading] = useState(false);
   const audioPlayerRef = useRef<any>(null);
   const flatListRef = useRef<FlatList>(null);
   const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -242,6 +249,74 @@ export default function ViewerScreen() {
     console.log(`🔍 Navigated to search match at ${segment.startTime}s`);
   };
 
+  const handleSummarize = () => {
+    console.log('📋 Summarize button clicked');
+    setShowSummaryDropdown(true);
+  };
+
+  const handleSummaryStyleSelect = async (style: SummaryStyle) => {
+    if (!transcript || !fileId) {
+      Alert.alert('Error', 'No transcript available for summarization');
+      return;
+    }
+
+    console.log('📋 Summary style selected:', style.title);
+    setSelectedSummaryStyle(style);
+    setSummaryLoading(true);
+
+    try {
+      // Generate AI summary content using the style's instructions
+      const summaryContent = await generateSummaryContent(transcript.fullText, style.instructions);
+      
+      // Create and save the summary
+      const summary = await AudioSummaryService.createSummary(
+        fileId,
+        style.id,
+        summaryContent
+      );
+      
+      setCurrentSummary(summary);
+      
+      // Show success message with preview
+      const previewText = summaryContent.length > 100 
+        ? summaryContent.substring(0, 100) + '...' 
+        : summaryContent;
+      
+      Alert.alert(
+        'Summary Generated',
+        `${style.title} summary created successfully!\n\nPreview: ${previewText}`,
+        [{ text: 'OK' }]
+      );
+      
+    } catch (error) {
+      console.error('❌ Error generating summary:', error);
+      Alert.alert('Error', 'Failed to generate summary. Please try again.');
+    } finally {
+      setSummaryLoading(false);
+    }
+  };
+
+  const generateSummaryContent = async (transcriptText: string, instructions: string): Promise<string> => {
+    // Placeholder for AI summary generation
+    // In a real implementation, this would call an AI service with the transcript and instructions
+    console.log('🤖 Generating AI summary with instructions:', instructions);
+    console.log('📄 Transcript length:', transcriptText.length);
+    
+    // Simulate AI processing delay
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    
+    // For now, return a mock summary based on the style
+    const mockSummaries = {
+      'Quick Overview': `Quick Overview: This audio recording contains ${transcriptText.split(' ').length} words of content. The main topics discussed include key insights and important points from the conversation. This summary provides a high-level overview of the content.`,
+      'Detailed Analysis': `Detailed Analysis: This comprehensive analysis of the audio content reveals multiple layers of discussion. The transcript contains ${transcriptText.split(' ').length} words that cover various topics and themes. Key findings include important insights, detailed explanations, and comprehensive coverage of the subject matter discussed.`,
+      'Action Items': `Action Items: Based on the audio content, here are the key action items identified:\n• Review main topics discussed\n• Follow up on key points mentioned\n• Implement suggested recommendations\n• Schedule follow-up discussions as needed`,
+      'Meeting Notes': `Meeting Notes: Key discussion points from this ${Math.round(transcriptText.split(' ').length / 150)} minute session:\n\n• Main agenda items covered\n• Decisions made during the meeting\n• Action items assigned\n• Next steps and follow-up required`
+    };
+    
+    // Return a mock summary or a simple one based on transcript length
+    return mockSummaries[instructions] || `Summary: This audio content contains ${transcriptText.split(' ').length} words discussing various topics. The summary has been generated based on the provided instructions: "${instructions}". Key themes and important points have been identified and condensed into this overview.`;
+  };
+
   const formatFileSize = (bytes: number): string => {
     if (bytes === 0) return '0 B';
     const k = 1024;
@@ -322,10 +397,10 @@ export default function ViewerScreen() {
         {!isEditMode && (
           <View style={styles.toolsHeader}>
           <View style={styles.toolsRow}>
-            <TouchableOpacity style={styles.toolButton} onPress={() => Alert.alert('Summarize', 'AI summarization coming soon')}>
+            <TouchableOpacity style={styles.toolButton} onPress={handleSummarize}>
               <BlurView intensity={18} style={styles.toolButtonBlur}>
                 <Lightbulb size={16} color="#f4ad3d" strokeWidth={1.5} />
-                <Text style={styles.toolButtonText}>Summarize</Text>
+                <Text style={styles.toolButtonText}>{summaryLoading ? 'Generating...' : 'Summarize'}</Text>
               </BlurView>
             </TouchableOpacity>
             
@@ -436,6 +511,14 @@ export default function ViewerScreen() {
         onConfirm={handleDiscardChanges}
         onCancel={() => setShowCancelModal(false)}
         isDestructive={true}
+      />
+
+      {/* Summary Dropdown */}
+      <SummaryDropdown
+        visible={showSummaryDropdown}
+        onClose={() => setShowSummaryDropdown(false)}
+        onStyleSelect={handleSummaryStyleSelect}
+        selectedStyleId={selectedSummaryStyle?.id || null}
       />
     </Layout>
   );
