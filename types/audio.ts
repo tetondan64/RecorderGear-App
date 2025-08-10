@@ -7,6 +7,8 @@ export interface AudioFile {
   importDate: string;
   mimeType?: string;
   hasTranscript?: boolean;
+  hasSummary?: boolean;
+  summaryStyleId?: string;
   base64Data?: string; // For web platform persistence
   folderId?: string; // For folder organization
   tags?: string[]; // Array of tag IDs
