@@ -5,9 +5,12 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Settings, ChevronDown, FileText, MessageCircle, Tag, MapPin, Loader as Loader2, Copy, ExternalLink } from 'lucide-react-native';
 import Layout from '@/components/Layout';
 import Header from '@/components/Header';
+import SummaryDropdown from '@/components/SummaryDropdown';
 import { useAudioFiles } from '@/hooks/useAudioFiles';
 import { TranscriptService } from '@/services/transcriptService';
+import { SummaryStylesService } from '@/services/summaryStylesService';
 import { Transcript } from '@/types/transcript';
+import { SummaryStyle } from '@/types/summary';
 
 interface AIResult {
   id: string;
@@ -27,12 +30,27 @@ export default function AIToolsScreen() {
   const [results, setResults] = useState<AIResult[]>([]);
   const [autoTagEnabled, setAutoTagEnabled] = useState(false);
   const [highlightEnabled, setHighlightEnabled] = useState(false);
+  const [showSummaryDropdown, setShowSummaryDropdown] = useState(false);
+  const [selectedSummaryStyle, setSelectedSummaryStyle] = useState<SummaryStyle | null>(null);
 
   useEffect(() => {
     if (selectedTranscriptId) {
       loadSelectedTranscript();
     }
   }, [selectedTranscriptId]);
+
+  useEffect(() => {
+    // Initialize default summary styles when component mounts
+    initializeSummaryStyles();
+  }, []);
+
+  const initializeSummaryStyles = async () => {
+    try {
+      await SummaryStylesService.initializeDefaultStyles();
+    } catch (error) {
+      console.error('Failed to initialize summary styles:', error);
+    }
+  };
 
   const loadSelectedTranscript = async () => {
     if (!selectedTranscriptId) return;
@@ -68,21 +86,34 @@ export default function AIToolsScreen() {
     ));
   };
 
-  const handleSummarize = async () => {
+  const handleSummarize = () => {
     if (!selectedTranscript) {
       Alert.alert('Error', 'Please select a transcript first');
       return;
     }
 
+    // Show the summary style dropdown
+    setShowSummaryDropdown(true);
+  };
+
+  const handleSummaryStyleSelect = async (style: SummaryStyle) => {
+    if (!selectedTranscript) return;
+
+    setSelectedSummaryStyle(style);
     setLoading('summarize', true);
-    
-    // Simulate AI processing
-    setTimeout(() => {
-      const mockSummary = `This transcript discusses effective communication in professional settings. Key points include the importance of clarity, active listening, and thoughtful responses. The speakers emphasize that while digital tools have expanded communication options, fundamental principles of empathy and understanding remain crucial for successful interactions.`;
-      
-      addResult('summary', mockSummary);
+
+    try {
+      // Simulate AI processing with the selected style
+      setTimeout(() => {
+        const mockSummary = `**${style.title.toUpperCase()}**\n\nGenerated using "${style.title}" style:\n\nThis transcript discusses effective communication in professional settings. Key points include the importance of clarity, active listening, and thoughtful responses. The speakers emphasize that while digital tools have expanded communication options, fundamental principles of empathy and understanding remain crucial for successful interactions.\n\n*Summary generated with style: ${style.subtitle}*`;
+        
+        addResult('summary', mockSummary);
+        setLoading('summarize', false);
+      }, 2000);
+    } catch (error) {
+      Alert.alert('Error', 'Failed to generate summary');
       setLoading('summarize', false);
-    }, 2000);
+    }
   };
 
   const handleAskQuestion = async () => {
@@ -443,6 +474,14 @@ export default function AIToolsScreen() {
           </View>
         </View>
       )}
+
+      {/* Summary Style Dropdown */}
+      <SummaryDropdown
+        visible={showSummaryDropdown}
+        onClose={() => setShowSummaryDropdown(false)}
+        onStyleSelect={handleSummaryStyleSelect}
+        selectedStyleId={selectedSummaryStyle?.id || null}
+      />
     </Layout>
   );
 }
