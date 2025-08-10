@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Modal, FlatList } from 'react-native';
 import { BlurView } from 'expo-blur';
-import { Lightbulb, FileText, List, Clipboard, MessageSquare, Zap } from 'lucide-react-native';
+import { Lightbulb, FileText, List, Clipboard, MessageSquare, Zap, Plus } from 'lucide-react-native';
 import { SummaryStyle } from '@/types/summary';
 
 interface SummaryDropdownProps {
@@ -9,6 +9,7 @@ interface SummaryDropdownProps {
   onClose: () => void;
   onStyleSelect: (style: SummaryStyle) => void;
   selectedStyleId: string | null;
+  onAddNewSummary?: () => void;
 }
 
 const SUMMARY_STYLES: SummaryStyle[] = [
@@ -63,6 +64,8 @@ const getIcon = (iconName: string, size: number, color: string) => {
       return <Clipboard {...iconProps} />;
     case 'message-square':
       return <MessageSquare {...iconProps} />;
+    case 'plus':
+      return <Plus {...iconProps} />;
     default:
       return <FileText {...iconProps} />;
   }
@@ -72,10 +75,18 @@ export default function SummaryDropdown({
   visible, 
   onClose, 
   onStyleSelect,
-  selectedStyleId 
+  selectedStyleId,
+  onAddNewSummary
 }: SummaryDropdownProps) {
   const handleStyleSelect = (style: SummaryStyle) => {
     onStyleSelect(style);
+    onClose();
+  };
+
+  const handleAddNewSummary = () => {
+    if (onAddNewSummary) {
+      onAddNewSummary();
+    }
     onClose();
   };
 
@@ -131,6 +142,33 @@ export default function SummaryDropdown({
               showsVerticalScrollIndicator={false}
               style={styles.stylesList}
             />
+
+            {/* Add New Summary Option */}
+            {onAddNewSummary && (
+              <>
+                <View style={styles.separator} />
+                <TouchableOpacity 
+                  style={styles.addNewItem}
+                  onPress={handleAddNewSummary}
+                >
+                  <View style={styles.styleItemContent}>
+                    <View style={styles.styleItemLeft}>
+                      <View style={styles.iconContainer}>
+                        {getIcon('plus', 16, '#f4ad3d')}
+                      </View>
+                      <View style={styles.styleTextContainer}>
+                        <Text style={styles.addNewTitle}>
+                          Add New Summary
+                        </Text>
+                        <Text style={styles.addNewDescription}>
+                          Create a custom summary style
+                        </Text>
+                      </View>
+                    </View>
+                  </View>
+                </TouchableOpacity>
+              </>
+            )}
 
             {/* Footer Tip */}
             <View style={styles.footer}>
@@ -231,6 +269,32 @@ const styles = StyleSheet.create({
   },
   selectedStyleDescription: {
     color: 'rgba(244, 173, 61, 0.8)',
+  },
+  separator: {
+    height: 1,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    marginHorizontal: 16,
+  },
+  addNewItem: {
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(244, 173, 61, 0.2)',
+    borderRadius: 8,
+    marginHorizontal: 8,
+    marginVertical: 8,
+    backgroundColor: 'rgba(244, 173, 61, 0.05)',
+  },
+  addNewTitle: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#f4ad3d',
+    marginBottom: 2,
+  },
+  addNewDescription: {
+    fontSize: 13,
+    color: 'rgba(244, 173, 61, 0.7)',
+    lineHeight: 16,
   },
   footer: {
     paddingHorizontal: 16,
