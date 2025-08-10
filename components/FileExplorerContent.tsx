@@ -92,8 +92,8 @@ const FileExplorerContent = forwardRef<FileExplorerContentHandles, FileExplorerC
     let optimisticMs = 0;
     let totalMs = 0;
     let success = false;
-    let watchdogTimeout: NodeJS.Timeout | null = null;
-    let finalWatchdogTimeout: NodeJS.Timeout | null = null;
+    let watchdogTimeout: ReturnType<typeof setTimeout> | null = null;
+    let finalWatchdogTimeout: ReturnType<typeof setTimeout> | null = null;
 
     try {
       setIsCreating(true);

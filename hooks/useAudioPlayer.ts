@@ -20,7 +20,7 @@ export function useAudioPlayer(files: AudioFile[] = []) {
   });
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const intervalRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const currentBlobUrlRef = useRef<string | null>(null);
   const pendingBlobUrlRef = useRef<string | null>(null);
   const shouldPlayAfterLoadRef = useRef<boolean>(false);
