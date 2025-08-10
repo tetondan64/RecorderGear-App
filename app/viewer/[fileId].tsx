@@ -251,7 +251,10 @@ export default function ViewerScreen() {
 
   const handleSummarize = () => {
     console.log('📋 Summarize button clicked');
+    console.error('🚨 VIEWER DEBUG: handleSummarize called, setting showSummaryDropdown to TRUE');
+    alert('🚨 VIEWER: Summarize button clicked! Setting dropdown visible.');
     setShowSummaryDropdown(true);
+    console.error('🚨 VIEWER DEBUG: showSummaryDropdown should now be TRUE');
   };
 
   const handleSummaryStyleSelect = async (style: SummaryStyle) => {
@@ -370,7 +373,7 @@ export default function ViewerScreen() {
           )}
         </TouchableOpacity>
         <Text style={styles.headerTitle} numberOfLines={1}>
-          {isEditMode ? 'Editing Transcript' : ''}
+          {isEditMode ? 'Editing Transcript' : 'DEBUG TEST VERSION 123'}
         </Text>
         <TouchableOpacity 
           style={styles.moreButton} 
@@ -514,6 +517,7 @@ export default function ViewerScreen() {
       />
 
       {/* Summary Dropdown */}
+      {console.error('🚨 VIEWER DEBUG: About to render SummaryDropdown with visible =', showSummaryDropdown)}
       <SummaryDropdown
         visible={showSummaryDropdown}
         onClose={() => setShowSummaryDropdown(false)}

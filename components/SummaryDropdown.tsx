@@ -27,6 +27,16 @@ export default function SummaryDropdown({
   // DEBUG: Add console log to verify component is loading
   console.log('🔍 SummaryDropdown DEBUG - Component rendered with visible:', visible, 'styles loaded:', styles.length);
   console.log('🎨 SummaryDropdown DEBUG - StyleSheet object:', StyleSheet);
+  
+  // AGGRESSIVE DEBUG: Alert that should be impossible to miss
+  if (typeof window !== 'undefined' && visible) {
+    console.error('===============================================');
+    console.error('🚨 SUMMARY DROPDOWN IS RENDERING! 🚨');
+    console.error('===============================================');
+    console.error('Visible:', visible, 'Styles count:', styles.length);
+    console.error('===============================================');
+    alert('🚨 SummaryDropdown is rendering! Visible: ' + visible + ', Styles: ' + styles.length);
+  }
 
   useEffect(() => {
     if (visible) {
