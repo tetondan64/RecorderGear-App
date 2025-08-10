@@ -1,11 +1,8 @@
-
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Modal, FlatList } from 'react-native';
 import { BlurView } from 'expo-blur';
-import { FileText, Plus, Check, ChevronDown } from 'lucide-react-native';
+import { Lightbulb, FileText, List, Clipboard, MessageSquare, Zap } from 'lucide-react-native';
 import { SummaryStyle } from '@/types/summary';
-import { SummaryStylesService } from '@/services/summaryStylesService';
-import CustomSummaryModal from './CustomSummaryModal';
 
 interface SummaryDropdownProps {
   visible: boolean;
@@ -14,48 +11,69 @@ interface SummaryDropdownProps {
   selectedStyleId: string | null;
 }
 
+const SUMMARY_STYLES: SummaryStyle[] = [
+  {
+    id: 'brief-summary',
+    title: 'Brief Summary',
+    description: 'Quick overview in 2-3 sentences',
+    instructions: 'Quick Overview',
+    icon: 'zap'
+  },
+  {
+    id: 'detailed-summary',
+    title: 'Detailed Summary',
+    description: 'Comprehensive analysis with key insights',
+    instructions: 'Detailed Analysis',
+    icon: 'file-text'
+  },
+  {
+    id: 'key-points',
+    title: 'Key Points',
+    description: 'Bulleted list of main topics',
+    instructions: 'Key Points',
+    icon: 'list'
+  },
+  {
+    id: 'action-items',
+    title: 'Action Items',
+    description: 'Extract actionable tasks and next steps',
+    instructions: 'Action Items',
+    icon: 'clipboard'
+  },
+  {
+    id: 'meeting-notes',
+    title: 'Meeting Notes',
+    description: 'Structure as formal meeting minutes',
+    instructions: 'Meeting Notes',
+    icon: 'message-square'
+  }
+];
+
+const getIcon = (iconName: string, size: number, color: string) => {
+  const iconProps = { size, color, strokeWidth: 1.5 };
+  
+  switch (iconName) {
+    case 'zap':
+      return <Zap {...iconProps} />;
+    case 'file-text':
+      return <FileText {...iconProps} />;
+    case 'list':
+      return <List {...iconProps} />;
+    case 'clipboard':
+      return <Clipboard {...iconProps} />;
+    case 'message-square':
+      return <MessageSquare {...iconProps} />;
+    default:
+      return <FileText {...iconProps} />;
+  }
+};
+
 export default function SummaryDropdown({ 
   visible, 
   onClose, 
   onStyleSelect,
   selectedStyleId 
 }: SummaryDropdownProps) {
-  const [styles, setStyles] = useState<SummaryStyle[]>([]);
-  const [showCustomModal, setShowCustomModal] = useState(false);
-  const [loading, setLoading] = useState(false);
-
-  // DEBUG: Add console log to verify component is loading
-  console.log('🔍 SummaryDropdown DEBUG - Component rendered with visible:', visible, 'styles loaded:', styles.length);
-  console.log('🎨 SummaryDropdown DEBUG - StyleSheet object:', StyleSheet);
-
-  useEffect(() => {
-    if (visible) {
-      loadStyles();
-    }
-  }, [visible]);
-
-  const loadStyles = async () => {
-    try {
-      setLoading(true);
-      const allStyles = await SummaryStylesService.getAllSummaryStyles();
-      setStyles(allStyles);
-    } catch (error) {
-      console.error('Failed to load summary styles:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleCreateCustomStyle = async (title: string, subtitle: string, instructions: string) => {
-    try {
-      const newStyle = await SummaryStylesService.createSummaryStyle(title, subtitle, instructions);
-      setStyles(prev => [...prev, newStyle].sort((a, b) => a.title.localeCompare(b.title)));
-      setShowCustomModal(false);
-    } catch (error) {
-      throw error; // Let the modal handle the error display
-    }
-  };
-
   const handleStyleSelect = (style: SummaryStyle) => {
     onStyleSelect(style);
     onClose();
@@ -64,224 +82,166 @@ export default function SummaryDropdown({
   if (!visible) return null;
 
   return (
-    <>
-      <Modal
-        visible={visible}
-        transparent={true}
-        animationType="fade"
-        onRequestClose={onClose}
-      >
-        <TouchableOpacity style={styles.overlay} onPress={onClose}>
-          <View style={styles.dropdownContainer}>
-            <BlurView intensity={20} style={[styles.dropdown, { backgroundColor: 'rgba(0, 0, 0, 0.35)' }]}>
-              {/* Header */}
-              <View style={styles.header}>
-                <View style={styles.headerLeft}>
-                  <FileText size={18} color="#f4ad3d" strokeWidth={1.5} />
-                  <Text style={styles.headerTitle}>Summary Styles</Text>
-                </View>
+    <Modal
+      visible={visible}
+      transparent={true}
+      animationType="fade"
+      onRequestClose={onClose}
+    >
+      <TouchableOpacity style={styles.overlay} onPress={onClose}>
+        <View style={styles.dropdownContainer}>
+          <BlurView intensity={20} style={[styles.dropdown, { backgroundColor: 'rgba(0, 0, 0, 0.35)' }]}>
+            {/* Header */}
+            <View style={styles.header}>
+              <View style={styles.headerLeft}>
+                <Lightbulb size={18} color="#f4ad3d" strokeWidth={1.5} />
+                <Text style={styles.headerTitle}>Summary Styles</Text>
               </View>
+            </View>
 
-              {/* Add Custom Style Button */}
-              <TouchableOpacity 
-                style={styles.addCustomButton}
-                onPress={() => setShowCustomModal(true)}
-              >
-                <Plus size={16} color="#f4ad3d" strokeWidth={1.5} />
-                <Text style={styles.addCustomText}>Add Custom Style</Text>
-              </TouchableOpacity>
-
-              {/* Styles List */}
-              {styles.length > 0 && (
-                <View style={styles.separator} />
-              )}
-              
-              <FlatList
-                data={styles}
-                keyExtractor={(item) => item.id}
-                renderItem={({ item }) => {
-                  const isSelected = selectedStyleId === item.id;
-                  return (
-                    <TouchableOpacity 
-                      style={[styles.styleItem, isSelected && styles.selectedStyleItem]}
-                      onPress={() => handleStyleSelect(item)}
-                    >
-                      <View style={styles.styleItemContent}>
+            {/* Summary Styles List */}
+            <FlatList
+              data={SUMMARY_STYLES}
+              keyExtractor={(item) => item.id}
+              renderItem={({ item }) => {
+                const isSelected = selectedStyleId === item.id;
+                return (
+                  <TouchableOpacity 
+                    style={[styles.styleItem, isSelected && styles.selectedStyleItem]}
+                    onPress={() => handleStyleSelect(item)}
+                  >
+                    <View style={styles.styleItemContent}>
+                      <View style={styles.styleItemLeft}>
+                        <View style={styles.iconContainer}>
+                          {getIcon(item.icon, 16, isSelected ? '#f4ad3d' : 'rgba(255, 255, 255, 0.7)')}
+                        </View>
                         <View style={styles.styleTextContainer}>
                           <Text style={[styles.styleTitle, isSelected && styles.selectedStyleTitle]}>
                             {item.title}
                           </Text>
-                          <Text style={[styles.styleSubtitle, isSelected && styles.selectedStyleSubtitle]}>
-                            {item.subtitle}
+                          <Text style={[styles.styleDescription, isSelected && styles.selectedStyleDescription]}>
+                            {item.description}
                           </Text>
                         </View>
-                        {isSelected && (
-                          <Check size={16} color="#f4ad3d" strokeWidth={2} />
-                        )}
                       </View>
-                    </TouchableOpacity>
-                  );
-                }}
-                showsVerticalScrollIndicator={false}
-                style={styles.stylesList}
-                maxHeight={300}
-              />
+                    </View>
+                  </TouchableOpacity>
+                );
+              }}
+              showsVerticalScrollIndicator={false}
+              style={styles.stylesList}
+            />
 
-              {styles.length === 0 && !loading && (
-                <View style={styles.emptyState}>
-                  <Text style={styles.emptyStateText}>No summary styles yet</Text>
-                  <Text style={styles.emptyStateSubtext}>Create your first custom style</Text>
-                </View>
-              )}
-            </BlurView>
-          </View>
-        </TouchableOpacity>
-      </Modal>
-
-      {/* Custom Summary Modal */}
-      <CustomSummaryModal
-        visible={showCustomModal}
-        onSave={handleCreateCustomStyle}
-        onClose={() => setShowCustomModal(false)}
-      />
-    </>
+            {/* Footer Tip */}
+            <View style={styles.footer}>
+              <Text style={styles.footerText}>Choose a style to generate AI summary</Text>
+            </View>
+          </BlurView>
+        </View>
+      </TouchableOpacity>
+    </Modal>
   );
 }
 
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.65)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
+    backgroundColor: 'rgba(0, 0, 0, 0.4)',
+    justifyContent: 'flex-start',
+    alignItems: 'flex-end',
+    paddingTop: 120,
+    paddingRight: 24,
   },
   dropdownContainer: {
-    width: '90%',
-    maxWidth: 320,
-    maxHeight: '80%',
+    width: 280,
   },
   dropdown: {
-    backgroundColor: 'rgba(13, 13, 13, 0.95)',
-    borderRadius: 20,
-    borderWidth: 1.5,
-    borderColor: 'rgba(244, 173, 61, 0.3)',
+    backgroundColor: 'rgba(0, 0, 0, 0.35)',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
     overflow: 'hidden',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 0.5,
-    shadowRadius: 24,
-    elevation: 12,
-    // DEBUG: Add temporary bright border to verify new styles are loading
-    borderTopWidth: 5,
-    borderTopColor: '#FF0000', // Bright red top border - should be very obvious!
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.3,
+    shadowRadius: 16,
+    elevation: 8,
+    maxHeight: 500,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 18,
-    borderBottomWidth: 1.5,
-    borderBottomColor: 'rgba(244, 173, 61, 0.2)',
-    backgroundColor: 'rgba(244, 173, 61, 0.08)',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255, 255, 255, 0.1)',
   },
   headerLeft: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: 8,
   },
   headerTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#FFFFFF',
-    letterSpacing: 0.3,
-  },
-  addCustomButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    gap: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255, 255, 255, 0.08)',
-    backgroundColor: 'rgba(244, 173, 61, 0.05)',
-  },
-  addCustomText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#f4ad3d',
-    letterSpacing: 0.2,
-  },
-  separator: {
-    height: 1.5,
-    backgroundColor: 'rgba(244, 173, 61, 0.15)',
+    color: '#FFFFFF',
   },
   stylesList: {
-    maxHeight: 340,
-    paddingVertical: 8,
+    maxHeight: 320,
   },
   styleItem: {
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    marginHorizontal: 8,
-    marginVertical: 2,
-    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
   },
   selectedStyleItem: {
-    backgroundColor: 'rgba(244, 173, 61, 0.15)',
-    borderWidth: 1,
-    borderColor: 'rgba(244, 173, 61, 0.3)',
+    backgroundColor: 'rgba(244, 173, 61, 0.1)',
   },
   styleItemContent: {
+    width: '100%',
+  },
+  styleItemLeft: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    gap: 12,
+    flex: 1,
+  },
+  iconContainer: {
+    width: 20,
+    height: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   styleTextContainer: {
     flex: 1,
-    paddingRight: 12,
   },
   styleTitle: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '600',
-    color: 'rgba(255, 255, 255, 0.95)',
-    marginBottom: 4,
-    letterSpacing: 0.2,
+    color: 'rgba(255, 255, 255, 0.9)',
+    marginBottom: 2,
   },
   selectedStyleTitle: {
     color: '#f4ad3d',
-    fontWeight: '700',
   },
-  styleSubtitle: {
-    fontSize: 14,
-    fontWeight: '400',
-    color: 'rgba(255, 255, 255, 0.7)',
-    lineHeight: 18,
-    letterSpacing: 0.1,
-  },
-  selectedStyleSubtitle: {
-    color: 'rgba(244, 173, 61, 0.9)',
-  },
-  emptyState: {
-    paddingHorizontal: 24,
-    paddingVertical: 32,
-    alignItems: 'center',
-    marginVertical: 8,
-  },
-  emptyStateText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: 'rgba(255, 255, 255, 0.8)',
-    marginBottom: 8,
-    textAlign: 'center',
-    letterSpacing: 0.2,
-  },
-  emptyStateSubtext: {
-    fontSize: 14,
+  styleDescription: {
+    fontSize: 13,
     color: 'rgba(255, 255, 255, 0.6)',
+    lineHeight: 16,
+  },
+  selectedStyleDescription: {
+    color: 'rgba(244, 173, 61, 0.8)',
+  },
+  footer: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255, 255, 255, 0.05)',
+  },
+  footerText: {
+    fontSize: 12,
+    color: 'rgba(255, 255, 255, 0.5)',
     textAlign: 'center',
-    lineHeight: 20,
-    letterSpacing: 0.1,
   },
 });
+    
