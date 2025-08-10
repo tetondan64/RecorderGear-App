@@ -24,6 +24,10 @@ export default function SummaryDropdown({
   const [showCustomModal, setShowCustomModal] = useState(false);
   const [loading, setLoading] = useState(false);
 
+  // DEBUG: Add console log to verify component is loading
+  console.log('🔍 SummaryDropdown DEBUG - Component rendered with visible:', visible, 'styles loaded:', styles.length);
+  console.log('🎨 SummaryDropdown DEBUG - StyleSheet object:', StyleSheet);
+
   useEffect(() => {
     if (visible) {
       loadStyles();
@@ -168,6 +172,9 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.5,
     shadowRadius: 24,
     elevation: 12,
+    // DEBUG: Add temporary bright border to verify new styles are loading
+    borderTopWidth: 5,
+    borderTopColor: '#FF0000', // Bright red top border - should be very obvious!
   },
   header: {
     flexDirection: 'row',
