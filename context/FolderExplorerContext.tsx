@@ -43,7 +43,7 @@ export function FolderExplorerProvider({ parentId, children }: FolderExplorerPro
   const [error, setError] = useState<string | null>(null);
   
   const adapter = FoldersAdapter.getInstance();
-  const refetchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const refetchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isMountedRef = useRef(true);
   const pendingDeletedIds = useRef<Set<string>>(new Set());
 

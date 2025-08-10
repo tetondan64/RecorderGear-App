@@ -29,8 +29,8 @@ export default function ViewerScreen() {
   const [lastAutoScrollTime, setLastAutoScrollTime] = useState(0);
   const audioPlayerRef = useRef<any>(null);
   const flatListRef = useRef<FlatList>(null);
-  const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const autoScrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const scrollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const autoScrollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     loadFileAndTranscript();
