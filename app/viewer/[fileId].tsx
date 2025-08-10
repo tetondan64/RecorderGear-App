@@ -250,11 +250,7 @@ export default function ViewerScreen() {
   };
 
   const handleSummarize = () => {
-    console.log('📋 Summarize button clicked');
-    console.error('🚨 VIEWER DEBUG: handleSummarize called, setting showSummaryDropdown to TRUE');
-    alert('🚨 VIEWER: Summarize button clicked! Setting dropdown visible.');
     setShowSummaryDropdown(true);
-    console.error('🚨 VIEWER DEBUG: showSummaryDropdown should now be TRUE');
   };
 
   const handleSummaryStyleSelect = async (style: SummaryStyle) => {
@@ -317,7 +313,7 @@ export default function ViewerScreen() {
     };
     
     // Return a mock summary or a simple one based on transcript length
-    return mockSummaries[instructions] || `Summary: This audio content contains ${transcriptText.split(' ').length} words discussing various topics. The summary has been generated based on the provided instructions: "${instructions}". Key themes and important points have been identified and condensed into this overview.`;
+    return mockSummaries[instructions] || `Summary: This audio content contains ${transcriptText.split(' ').length} words discussing various topics. The summary has been generated based on the provided instructions: \"${instructions}\". Key themes and important points have been identified and condensed into this overview.`;
   };
 
   const formatFileSize = (bytes: number): string => {
@@ -373,7 +369,7 @@ export default function ViewerScreen() {
           )}
         </TouchableOpacity>
         <Text style={styles.headerTitle} numberOfLines={1}>
-          {isEditMode ? 'Editing Transcript' : 'DEBUG TEST VERSION 123'}
+          {isEditMode ? 'Editing Transcript' : file.name || 'Audio File'}
         </Text>
         <TouchableOpacity 
           style={styles.moreButton} 
@@ -517,7 +513,6 @@ export default function ViewerScreen() {
       />
 
       {/* Summary Dropdown */}
-      {console.error('🚨 VIEWER DEBUG: About to render SummaryDropdown with visible =', showSummaryDropdown)}
       <SummaryDropdown
         visible={showSummaryDropdown}
         onClose={() => setShowSummaryDropdown(false)}
@@ -633,38 +628,41 @@ const styles = StyleSheet.create({
   },
   transcriptList: {
     paddingBottom: 20,
-    paddingHorizontal: 4, // Add horizontal padding to prevent glow cut-off
+    paddingHorizontal: 4, // Add horizontal padding to prevent text cutoff
   },
   noTranscriptContainer: {
     flex: 1,
+    alignItems: 'center',
     justifyContent: 'center',
+    paddingHorizontal: 24,
   },
   noTranscriptCard: {
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.1)',
+    borderRadius: 20,
     padding: 32,
     alignItems: 'center',
-    overflow: 'hidden',
+    maxWidth: 320,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
   },
   noTranscriptText: {
     fontSize: 18,
     fontWeight: '600',
-    color: 'rgba(255, 255, 255, 0.8)',
-    marginBottom: 8,
+    color: 'rgba(255, 255, 255, 0.9)',
+    marginBottom: 12,
     textAlign: 'center',
+    letterSpacing: 0.3,
   },
   noTranscriptSubtext: {
-    fontSize: 10,
-    color: 'rgba(255, 255, 255, 0.6)',
+    fontSize: 15,
+    color: 'rgba(255, 255, 255, 0.65)',
     textAlign: 'center',
-    lineHeight: 20,
+    lineHeight: 22,
+    letterSpacing: 0.2,
   },
   bottomSection: {
-    position: 'absolute',
-    bottom: 20, // Position at bottom of screen
-    left: 24,
-    right: 24,
+    paddingTop: 16,
+    backgroundColor: 'rgba(13, 13, 13, 0.95)',
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255, 255, 255, 0.08)',
   },
 });
