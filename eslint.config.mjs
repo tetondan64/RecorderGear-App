@@ -15,5 +15,11 @@ export default [
       'react/display-name': 'off',
       'no-dupe-keys': 'off'
     }
+  },
+  {
+    files: ['**/*.ts', '**/*.tsx'],
+    rules: {
+      'no-undef': 'off'
+    }
   }
 ];
