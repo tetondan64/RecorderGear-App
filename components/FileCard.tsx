@@ -21,6 +21,7 @@ import FolderPickerModal from './FolderPickerModal';
 import { RecordingsStore } from '@/data/recordingsStore';
 import TagChips from './TagChips';
 import { Tag } from '@/types/tag';
+import logger from '@/utils/logger';
 
 interface FileCardProps {
   file: AudioFile;
@@ -233,7 +234,7 @@ export default function FileCard({
         setFileTags([]);
       }
     } catch (error) {
-      console.error('Failed to load file tags:', error);
+      logger.error('Failed to load file tags:', error);
       setFileTags([]);
     }
   };
@@ -398,7 +399,6 @@ export default function FileCard({
   const handleTranscribeAction = useCallback(() => {
     // If file already has transcript, navigate to viewer instead of re-transcribing
     if (file.hasTranscript) {
-      console.log('📖 File already has transcript, navigating to viewer');
       onPress(); // Use the main onPress handler to navigate to viewer
       return;
     }

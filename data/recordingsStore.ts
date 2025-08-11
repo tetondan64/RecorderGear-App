@@ -6,6 +6,7 @@ import { StoreEvent } from '@/types/store';
 import { AudioStorageService } from '@/services/audioStorage';
 import { FolderService } from '@/services/folderService';
 import { StorageService } from '@/services/storageService';
+import logger from '@/utils/logger';
 
 // Storage key
 const TAGS_KEY = 'rg.tags.v1';
@@ -48,7 +49,7 @@ function initSyncChannel(): void {
     syncChannel.onmessage = (event: MessageEvent<SyncMessage>) => {
       // Only process messages from other tabs/windows
       if (event.data.instanceId !== instanceId) {
-        console.log('📡 Received cross-tab sync event:', event.data.type);
+        logger.log('📡 Received cross-tab sync event:', event.data.type);
         RecordingsStore.notifyStoreChanged(true, event.data.event); // fromBroadcast = true
       }
     };
@@ -61,13 +62,13 @@ function initSyncChannel(): void {
           syncChannel = null;
         }
       } catch (error) {
-        console.warn('Failed to close BroadcastChannel:', error);
+        logger.warn('Failed to close BroadcastChannel:', error);
       }
     };
 
-    console.log('📡 BroadcastChannel initialized for cross-tab sync');
+    logger.log('📡 BroadcastChannel initialized for cross-tab sync');
   } catch (error) {
-    console.warn('Failed to initialize BroadcastChannel:', error);
+    logger.warn('Failed to initialize BroadcastChannel:', error);
   }
 }
 
@@ -115,7 +116,7 @@ export class RecordingsStore {
         };
         syncChannel.postMessage(message);
       } catch (error) {
-        console.warn('Failed to broadcast store change:', error);
+        logger.warn('Failed to broadcast store change:', error);
       }
     }
     
@@ -152,10 +153,9 @@ export class RecordingsStore {
 
       this.notifyStoreChanged();
       
-      console.log('✅ Recording tags updated:', recordingId, tagIds);
       return updatedRecording;
     } catch (error) {
-      console.error('Failed to update recording tags:', error);
+      logger.error('Failed to update recording tags:', error);
       throw error;
     }
   }
@@ -169,10 +169,9 @@ export class RecordingsStore {
 
       this.notifyStoreChanged();
       
-      console.log('✅ Recording moved to folder:', recordingId, folderId);
       return updatedRecording;
     } catch (error) {
-      console.error('Failed to move recording to folder:', error);
+      logger.error('Failed to move recording to folder:', error);
       throw error;
     }
   }
@@ -184,7 +183,7 @@ export class RecordingsStore {
       const tags = data ? JSON.parse(data) : [];
       return tags.sort((a: Tag, b: Tag) => a.name.localeCompare(b.name));
     } catch (error) {
-      console.error('Failed to get tags:', error);
+      logger.error('Failed to get tags:', error);
       return [];
     }
   }
@@ -194,7 +193,7 @@ export class RecordingsStore {
       await StorageService.setItem(TAGS_KEY, JSON.stringify(tags));
       this.notifyStoreChanged();
     } catch (error) {
-      console.error('Failed to set tags:', error);
+      logger.error('Failed to set tags:', error);
       throw error;
     }
   }
@@ -233,7 +232,7 @@ export class RecordingsStore {
       
       return newTag;
     } catch (error) {
-      console.error('Failed to create tag:', error);
+      logger.error('Failed to create tag:', error);
       throw error;
     }
   }
@@ -258,21 +257,18 @@ export class RecordingsStore {
       await this.setTags(updatedTags);
       
       this.notifyStoreChanged();
-      console.log('✅ Tag deleted globally:', tagId);
     } catch (error) {
-      console.error('Failed to delete tag:', error);
+      logger.error('Failed to delete tag:', error);
       throw error;
     }
   }
   // File Explorer specific methods
   static async getFoldersInFolder(parentId: string | null): Promise<Folder[]> {
     try {
-      console.log('🔍 RecordingsStore.getFoldersInFolder called with parentId:', parentId);
       const result = await FolderService.getFoldersByParentId(parentId);
-      console.log('🔍 RecordingsStore.getFoldersInFolder result:', result.length, result.map(f => ({ id: f.id, name: f.name, parentId: f.parentId })));
       return result;
     } catch (error) {
-      console.error('Failed to get folders in folder:', error);
+      logger.error('Failed to get folders in folder:', error);
       return [];
     }
   }
@@ -282,7 +278,7 @@ export class RecordingsStore {
       const allRecordings = await AudioStorageService.getAllFiles();
       return allRecordings.filter(recording => recording.folderId === folderId);
     } catch (error) {
-      console.error('Failed to get recordings in folder:', error);
+      logger.error('Failed to get recordings in folder:', error);
       return [];
     }
   }
@@ -291,7 +287,7 @@ export class RecordingsStore {
     try {
       return await FolderService.getFolderPath(folderId);
     } catch (error) {
-      console.error('Failed to get folder path:', error);
+      logger.error('Failed to get folder path:', error);
       return [];
     }
   }
@@ -301,7 +297,7 @@ export class RecordingsStore {
       const renamedFolder = await FolderService.renameFolder(folderId, newName);
       return renamedFolder;
     } catch (error) {
-      console.error('Failed to rename folder:', error);
+      logger.error('Failed to rename folder:', error);
       throw error;
     }
   }
@@ -311,7 +307,7 @@ export class RecordingsStore {
       await AudioStorageService.deleteFile(recordingId);
       this.notifyStoreChanged();
     } catch (error) {
-      console.error('Failed to delete recording:', error);
+      logger.error('Failed to delete recording:', error);
       throw error;
     }
   }
@@ -321,7 +317,7 @@ export class RecordingsStore {
       await AudioStorageService.updateFileTranscriptStatus(recordingId, hasTranscript);
       this.notifyStoreChanged();
     } catch (error) {
-      console.error('Failed to update transcript status:', error);
+      logger.error('Failed to update transcript status:', error);
       throw error;
     }
   }
@@ -332,7 +328,7 @@ export class RecordingsStore {
       this.notifyStoreChanged();
       return renamedFile;
     } catch (error) {
-      console.error('Failed to rename recording:', error);
+      logger.error('Failed to rename recording:', error);
       throw error;
     }
   }
@@ -342,7 +338,7 @@ export class RecordingsStore {
     try {
       return await FolderService.getAllFolders();
     } catch (error) {
-      console.error('Failed to get folders:', error);
+      logger.error('Failed to get folders:', error);
       return [];
     }
   }
@@ -352,7 +348,7 @@ export class RecordingsStore {
       const newFolder = await FolderService.createFolder(name, parentId);
       return newFolder;
     } catch (error) {
-      console.error('Failed to create folder:', error);
+      logger.error('Failed to create folder:', error);
       throw error;
     }
   }
@@ -388,10 +384,8 @@ export class RecordingsStore {
 
       // Remove folder from storage
       await FolderService.deleteFolder(folderId);
-      
-      console.log('✅ Folder deleted globally:', folderId);
     } catch (error) {
-      console.error('Failed to delete folder:', error);
+      logger.error('Failed to delete folder:', error);
       throw error;
     }
   }
@@ -433,10 +427,9 @@ export class RecordingsStore {
       await FolderService._saveAllFolders(updatedFolders);
 
 
-      console.log('✅ Folder moved:', folderId, 'to parent:', newParentId);
       return updatedFolder;
     } catch (error) {
-      console.error('Failed to move folder:', error);
+      logger.error('Failed to move folder:', error);
       throw error;
     }
   }
@@ -468,7 +461,7 @@ export class RecordingsStore {
 
       return tagsWithCounts;
     } catch (error) {
-      console.error('Failed to get tags with counts:', error);
+      logger.error('Failed to get tags with counts:', error);
       return [];
     }
   }
@@ -512,11 +505,10 @@ export class RecordingsStore {
       );
       
       await this.setTags(updatedTags);
-      
-      console.log('✅ Tag renamed:', updatedTag.name);
+
       return updatedTag;
     } catch (error) {
-      console.error('Failed to rename tag:', error);
+      logger.error('Failed to rename tag:', error);
       throw error;
     }
   }
@@ -537,7 +529,7 @@ export class RecordingsStore {
         recordingCount: recordings.length,
       };
     } catch (error) {
-      console.error('Failed to get folder with counts:', error);
+      logger.error('Failed to get folder with counts:', error);
       return {
         folder: null,
         subfolderCount: 0,
@@ -548,19 +540,15 @@ export class RecordingsStore {
 
   static async getFoldersWithCounts(parentId: string | null): Promise<Array<Folder & { subfolderCount: number; recordingCount: number }>> {
     try {
-      console.log('🔍 RecordingsStore.getFoldersWithCounts called with parentId:', parentId);
-      
       const folders = await this.getFoldersInFolder(parentId);
-      console.log('🔍 RecordingsStore: Found folders:', folders.length, folders.map(f => f.name));
-      
+
       // Get counts for each folder
       const foldersWithCounts = await Promise.all(
         folders.map(async (folder) => {
           const { subfolderCount, recordingCount } = await this.getFolderWithCounts(folder.id);
           const folderDepth = await FolderService.getFolderDepth(folder.id);
           const isReadOnlyDueToDepth = folderDepth > 2;
-          
-          console.log(`🔍 RecordingsStore: Folder "${folder.name}" counts:`, { subfolderCount, recordingCount });
+
           return {
             ...folder,
             subfolderCount,
@@ -569,11 +557,10 @@ export class RecordingsStore {
           };
         })
       );
-      
-      console.log('🔍 RecordingsStore: Returning folders with counts:', foldersWithCounts.length);
+
       return foldersWithCounts;
     } catch (error) {
-      console.error('Failed to get folders with counts:', error);
+      logger.error('Failed to get folders with counts:', error);
       return [];
     }
   }

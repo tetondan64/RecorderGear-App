@@ -19,6 +19,7 @@ import { useAudioPlayer } from '@/hooks/useAudioPlayer';
 import { TranscriptService } from '@/services/transcriptService';
 import { RecordingsStore } from '@/data/recordingsStore';
 import { useFolderExplorer } from '@/context/FolderExplorerContext';
+import logger from '@/utils/logger';
 
 interface FileExplorerContentProps {
   recordings: AudioFile[];
@@ -83,7 +84,7 @@ const FileExplorerContent = forwardRef<FileExplorerContentHandles, FileExplorerC
 
   const handleCreateFolder = useCallback(async (folderName: string, parentId?: string | null) => {
     if (isCreating) {
-      console.log('⚠️ FileExplorerContent: Create already in progress, ignoring');
+      logger.warn('⚠️ FileExplorerContent: Create already in progress, ignoring');
       return;
     }
 
@@ -134,18 +135,15 @@ const FileExplorerContent = forwardRef<FileExplorerContentHandles, FileExplorerC
         optimisticTempId = addOptimisticFolder(trimmedName);
         optimisticMs = Date.now() - startTime;
 
-        console.log('optimistic:add', { tempId: optimisticTempId, name: trimmedName, parentId: targetParentId });
       }
       
       // Set up watchdog timers
       watchdogTimeout = setTimeout(() => {
-        console.log('⏰ FileExplorerContent: Watchdog refetch triggered for tempId:', optimisticTempId);
         refreshFolders();
       }, 2500);
       
       finalWatchdogTimeout = setTimeout(() => {
         if (optimisticTempId) {
-          console.log('⏰ FileExplorerContent: Final watchdog removing stuck folder:', optimisticTempId);
           removeOptimisticFolder(optimisticTempId);
           showSnackbar('Folder creation timed out. Please try again.');
         }
@@ -156,15 +154,8 @@ const FileExplorerContent = forwardRef<FileExplorerContentHandles, FileExplorerC
       totalMs = Date.now() - startTime;
       success = true;
       
-      console.log('events:create', { 
-        id: newFolder.id, 
-        name: newFolder.name,
-        tempId: optimisticTempId 
-      });
-
       // Emit local reconcile event for immediate UI update or refresh children
       if (optimisticTempId) {
-        console.log('local:reconcile', { tempId: optimisticTempId, realId: newFolder.id });
         replaceOptimisticFolder(optimisticTempId, {
           ...newFolder,
           subfolderCount: 0,
@@ -187,7 +178,7 @@ const FileExplorerContent = forwardRef<FileExplorerContentHandles, FileExplorerC
       showSnackbar(`Folder "${folderName}" created`);
       
     } catch (error) {
-      console.error('❌ FileExplorerContent: Folder creation failed:', error);
+      logger.error('❌ FileExplorerContent: Folder creation failed:', error);
       
       // Clear watchdog timers on error
       if (watchdogTimeout) clearTimeout(watchdogTimeout);
@@ -195,7 +186,6 @@ const FileExplorerContent = forwardRef<FileExplorerContentHandles, FileExplorerC
       
       // Remove optimistic folder on error
       if (optimisticTempId) {
-        console.log('removeTemp', { tempId: optimisticTempId });
         removeOptimisticFolder(optimisticTempId);
       }
       
@@ -206,13 +196,6 @@ const FileExplorerContent = forwardRef<FileExplorerContentHandles, FileExplorerC
       setIsCreating(false);
       
       // Telemetry logging
-      console.log('📊 folder_create:', {
-        parentId: parentId ?? currentFolderId,
-        nameLength: folderName.trim().length,
-        optimisticMs,
-        totalMs,
-        ok: success,
-      });
     }
   }, [isCreating, currentFolderId, addOptimisticFolder, refreshFolders, removeOptimisticFolder, adapter]);
 
