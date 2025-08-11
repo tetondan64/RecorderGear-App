@@ -20,11 +20,18 @@ const storeChangeListenersWithEvent: StoreChangeListenerWithEvent[] = [];
 let syncChannel: BroadcastChannel | null = null;
 const instanceId = Math.random().toString(36).substring(2, 15);
 
+interface SyncMessage {
+  type: string;
+  instanceId: string;
+  timestamp: number;
+  event: StoreEvent;
+}
+
 // Initialize BroadcastChannel for web platform
 if (Platform.OS === 'web' && typeof window !== 'undefined' && typeof window.BroadcastChannel !== 'undefined') {
   try {
     syncChannel = new window.BroadcastChannel('recordings-store-sync');
-    syncChannel.onmessage = (event) => {
+    syncChannel.onmessage = (event: MessageEvent<SyncMessage>) => {
       // Only process messages from other tabs/windows
       if (event.data.instanceId !== instanceId) {
         console.log('📡 Received cross-tab sync event:', event.data.type);
@@ -43,16 +50,17 @@ export class RecordingsStore {
     return Date.now().toString() + '_' + Math.random().toString(36).substring(2, 15);
   }
 
-  static notifyStoreChanged(fromBroadcast: boolean = false, event?: StoreEvent): void {
+  static notifyStoreChanged(fromBroadcast = false, event?: StoreEvent): void {
     // Broadcast to other tabs/windows on web platform
     if (Platform.OS === 'web' && typeof window !== 'undefined' && typeof window.BroadcastChannel !== 'undefined' && !fromBroadcast && syncChannel && event) {
       try {
-        syncChannel.postMessage({
+        const message: SyncMessage = {
           type: event.type || 'store-changed',
           instanceId,
           timestamp: Date.now(),
           event,
-        });
+        };
+        syncChannel.postMessage(message);
       } catch (error) {
         console.warn('Failed to broadcast store change:', error);
       }

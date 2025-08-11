@@ -1,5 +1,5 @@
 require('fake-indexeddb/auto');
-const { StorageService } = require('./temp/storageService.js');
+const { StorageService } = require('./temp/services/storageService.js');
 
 (async function run() {
   const testKey = 'test-key';
