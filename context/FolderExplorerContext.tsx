@@ -43,11 +43,16 @@ export function FolderExplorerProvider({ parentId, children }: FolderExplorerPro
   const [items, setItems] = useState<FolderItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  
+
   const adapter = FoldersAdapter.getInstance();
   const refetchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const isMountedRef = useRef(true);
   const pendingDeletedIds = useRef<Set<string>>(new Set());
+  const itemsRef = useRef<FolderItem[]>([]);
+
+  useEffect(() => {
+    itemsRef.current = items;
+  }, [items]);
 
   const generateTempId = (): string => {
     return `tmp-${Date.now()}-${Math.random().toString(36).substring(2, 15)}`;
@@ -223,7 +228,7 @@ export function FolderExplorerProvider({ parentId, children }: FolderExplorerPro
     // Check if this event affects our current parent
     const affectsCurrentParent =
       eventParentId === parentId || // Direct child operation
-      (op === 'move' && items.some(item => 'id' in item && item.id === id)); // Moving away from current parent
+      (op === 'move' && itemsRef.current.some(item => 'id' in item && item.id === id)); // Moving away from current parent
 
     if (affectsCurrentParent) {
       if (op === 'delete' && id && eventParentId === parentId) {
@@ -236,7 +241,7 @@ export function FolderExplorerProvider({ parentId, children }: FolderExplorerPro
       // For create operations, try to reconcile with optimistic folders
       if (op === 'create' && eventParentId === parentId) {
         // Find matching optimistic folder by name
-        const optimisticItem = items.find(item =>
+        const optimisticItem = itemsRef.current.find(item =>
           'pending' in item &&
           item.pending &&
           normalizeString(item.name) === normalizeString(event.payload.name || '')
@@ -250,13 +255,13 @@ export function FolderExplorerProvider({ parentId, children }: FolderExplorerPro
 
       debouncedRefetch();
     }
-  }, [parentId, items, debouncedRefetch, replaceOptimisticFolder, scheduleRefetch]);
+  }, [parentId, debouncedRefetch, replaceOptimisticFolder, scheduleRefetch]);
 
   // Subscribe to folder events
   useEffect(() => {
     const unsubscribe = adapter.watch(handleFolderEvent);
     return unsubscribe;
-  }, [adapter, handleFolderEvent]);
+  }, [handleFolderEvent]);
 
   // Load initial data when parentId changes
   useEffect(() => {
