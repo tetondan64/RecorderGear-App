@@ -2,6 +2,7 @@ import { Folder } from '@/types/folder';
 import { StorageService } from './storageService';
 import { AudioStorageService } from './audioStorage';
 import { RecordingsStore } from '@/data/recordingsStore';
+import logger from '@/utils/logger';
 
 // Unified storage key for all folder operations
 const UNIFIED_STORAGE_KEY = 'rg.folders.v1';
@@ -24,7 +25,7 @@ export class FolderService {
       this.allFoldersCache = null;
       await StorageService.setItem(this.UNIFIED_STORAGE_KEY, JSON.stringify(folders));
     } catch (error) {
-      console.error('Failed to save folders:', error);
+      logger.error('Failed to save folders:', error);
       throw error;
     }
   }
@@ -53,7 +54,7 @@ export class FolderService {
         return; // Migration already done
       }
 
-      console.log('🔄 Starting folder migration...');
+      logger.log('🔄 Starting folder migration...');
 
       // Load folders from both old and new storage keys for reconciliation
       const oldFoldersJson = await StorageService.getItem(this.OLD_STORAGE_KEY);
@@ -62,7 +63,7 @@ export class FolderService {
       const oldFolders: Folder[] = oldFoldersJson ? JSON.parse(oldFoldersJson) : [];
       const unifiedFolders: Folder[] = unifiedFoldersJson ? JSON.parse(unifiedFoldersJson) : [];
 
-      console.log('📁 Migration data:', {
+      logger.log('📁 Migration data:', {
         oldFoldersCount: oldFolders.length,
         unifiedFoldersCount: unifiedFolders.length
       });
@@ -85,7 +86,7 @@ export class FolderService {
       for (const oldFolder of oldFolders) {
         // Skip if already processed from unified store
         if (folderIdMap.has(oldFolder.id)) {
-          console.log('🔄 Skipping already processed folder:', oldFolder.name);
+          logger.log('🔄 Skipping already processed folder:', oldFolder.name);
           continue;
         }
 
@@ -96,7 +97,7 @@ export class FolderService {
           const uniqueName = this.generateUniqueFolderName(oldFolder.name, seenNamesInFinal);
           const newId = this.generateUniqueId();
           
-          console.log('🔄 Resolving name collision:', {
+          logger.log('🔄 Resolving name collision:', {
             originalName: oldFolder.name,
             uniqueName,
             originalId: oldFolder.id,
@@ -122,14 +123,14 @@ export class FolderService {
       // Repoint recordings to use canonical folder IDs
       try {
         const allRecordings = await AudioStorageService.getAllFiles();
-        console.log('🔄 Checking recordings for folder repointing:', allRecordings.length);
+        logger.log('🔄 Checking recordings for folder repointing:', allRecordings.length);
         
         for (const recording of allRecordings) {
           if (recording.folderId && folderIdMap.has(recording.folderId)) {
             const canonicalFolderId = folderIdMap.get(recording.folderId);
             
             if (canonicalFolderId !== recording.folderId) {
-              console.log('🔄 Repointing recording:', {
+              logger.log('🔄 Repointing recording:', {
                 recordingName: recording.name,
                 oldFolderId: recording.folderId,
                 newFolderId: canonicalFolderId
@@ -143,7 +144,7 @@ export class FolderService {
           }
         }
       } catch (recordingError) {
-        console.error('❌ Error repointing recordings:', recordingError);
+        logger.error('❌ Error repointing recordings:', recordingError);
         // Continue with folder migration even if recording update fails
       }
 
@@ -162,7 +163,7 @@ export class FolderService {
       // Mark migration as complete
       await StorageService.setItem(this.MIGRATION_COMPLETE_FLAG, 'true');
 
-      console.log('✅ Folder migration completed:', {
+      logger.log('✅ Folder migration completed:', {
         totalFolders: finalFolders.length,
         foldersModified,
         recordingsModified,
@@ -170,7 +171,7 @@ export class FolderService {
       });
 
     } catch (error) {
-      console.error('❌ Folder migration failed:', error);
+      logger.error('❌ Folder migration failed:', error);
       // Don't throw - allow app to continue with whatever data is available
     }
   }
@@ -180,23 +181,23 @@ export class FolderService {
       // Check cache first
       const now = Date.now();
       if (this.allFoldersCache && (now - this.allFoldersCache.timestamp) < this.CACHE_DURATION_MS) {
-        console.log('🚀 FolderService: Using cached folders');
+        logger.log('🚀 FolderService: Using cached folders');
         return this.allFoldersCache.data;
       }
       
-      console.log('🔄 FolderService: Cache miss, fetching fresh folders');
+      logger.log('🔄 FolderService: Cache miss, fetching fresh folders');
       
       // Perform migration before getting folders
       await this.performMigration();
       
-      console.log('🔍 FolderService.getAllFolders: About to load from storage key:', this.UNIFIED_STORAGE_KEY);
+      logger.log('🔍 FolderService.getAllFolders: About to load from storage key:', this.UNIFIED_STORAGE_KEY);
       const foldersJson = await StorageService.getItem(this.UNIFIED_STORAGE_KEY);
-      console.log('🔍 FolderService.getAllFolders: Raw storage data exists:', !!foldersJson);
+      logger.log('🔍 FolderService.getAllFolders: Raw storage data exists:', !!foldersJson);
       
       if (!foldersJson) return [];
       
       const folders: Folder[] = JSON.parse(foldersJson);
-      console.log('🔍 FolderService.getAllFolders: Parsed folders:', folders.length, folders.map(f => ({ id: f.id, name: f.name, parentId: f.parentId })));
+      logger.log('🔍 FolderService.getAllFolders: Parsed folders:', folders.length, folders.map(f => ({ id: f.id, name: f.name, parentId: f.parentId })));
       
       const sortedFolders = folders.sort((a, b) => a.name.localeCompare(b.name));
       
@@ -208,7 +209,7 @@ export class FolderService {
       
       return sortedFolders;
     } catch (error) {
-      console.error('Failed to get folders:', error);
+      logger.error('Failed to get folders:', error);
       return [];
     }
   }
@@ -260,10 +261,10 @@ export class FolderService {
       const updatedFolders = [...existingFolders, newFolder];
       await this._saveAllFolders(updatedFolders);
       
-      console.log('✅ Folder created:', newFolder.name);
+      logger.log('✅ Folder created:', newFolder.name);
       return newFolder;
     } catch (error) {
-      console.error('Failed to create folder:', error);
+      logger.error('Failed to create folder:', error);
       throw error;
     }
   }
@@ -273,7 +274,7 @@ export class FolderService {
       const folders = await this.getAllFolders();
       return folders.find(f => f.id === folderId) || null;
     } catch (error) {
-      console.error('Failed to get folder by ID:', error);
+      logger.error('Failed to get folder by ID:', error);
       return null;
     }
   }
@@ -294,7 +295,7 @@ export class FolderService {
       
       return filteredFolders.sort((a, b) => a.name.localeCompare(b.name));
     } catch (error) {
-      console.error('Failed to get folders by parent ID:', error);
+      logger.error('Failed to get folders by parent ID:', error);
       return [];
     }
   }
@@ -317,7 +318,7 @@ export class FolderService {
       
       return path;
     } catch (error) {
-      console.error('Failed to get folder path:', error);
+      logger.error('Failed to get folder path:', error);
       return [];
     }
   }
@@ -339,14 +340,14 @@ export class FolderService {
         
         // Safety check to prevent infinite loops
         if (depth > 10) {
-          console.warn('Folder depth calculation exceeded safety limit, possible circular reference');
+          logger.warn('Folder depth calculation exceeded safety limit, possible circular reference');
           break;
         }
       }
       
       return depth;
     } catch (error) {
-      console.error('Failed to calculate folder depth:', error);
+      logger.error('Failed to calculate folder depth:', error);
       return 0;
     }
   }
@@ -356,9 +357,9 @@ export class FolderService {
       const updatedFolders = folders.filter(f => f.id !== folderId);
       await this._saveAllFolders(updatedFolders);
       
-      console.log('✅ Folder deleted:', folderId);
+      logger.log('✅ Folder deleted:', folderId);
     } catch (error) {
-      console.error('Failed to delete folder:', error);
+      logger.error('Failed to delete folder:', error);
       throw error;
     }
   }
@@ -404,10 +405,10 @@ export class FolderService {
       
       await this._saveAllFolders(updatedFolders);
       
-      console.log('✅ Folder renamed:', updatedFolder.name);
+      logger.log('✅ Folder renamed:', updatedFolder.name);
       return updatedFolder;
     } catch (error) {
-      console.error('Failed to rename folder:', error);
+      logger.error('Failed to rename folder:', error);
       throw error;
     }
   }

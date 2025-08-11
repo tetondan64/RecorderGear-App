@@ -1,3 +1,5 @@
+import logger from '@/utils/logger';
+
 export async function POST(request: Request) {
   const corsHeaders = {
     'Access-Control-Allow-Origin': '*',
@@ -16,7 +18,7 @@ export async function POST(request: Request) {
     const apiKey = process.env.OPENAI_API_KEY;
     
     if (!apiKey) {
-      console.error('OpenAI API key not found');
+      logger.error('OpenAI API key not found');
       return new Response(
         JSON.stringify({ 
           error: 'API key not configured',
@@ -42,7 +44,7 @@ export async function POST(request: Request) {
       );
     }
 
-    console.log('Processing audio file:', audioFile.name, audioFile.size, 'bytes');
+    logger.log('Processing audio file:', audioFile.name, audioFile.size, 'bytes');
 
     // Prepare FormData for OpenAI
     const whisperFormData = new FormData();
@@ -51,7 +53,7 @@ export async function POST(request: Request) {
     whisperFormData.append('response_format', 'verbose_json');
     whisperFormData.append('temperature', '0');
 
-    console.log('📡 Calling OpenAI Whisper API...');
+    logger.log('📡 Calling OpenAI Whisper API...');
 
     const openaiResponse = await fetch('https://api.openai.com/v1/audio/transcriptions', {
       method: 'POST',
@@ -63,7 +65,7 @@ export async function POST(request: Request) {
 
     if (!openaiResponse.ok) {
       const errorData = await openaiResponse.text();
-      console.error('OpenAI API error:', openaiResponse.status, errorData);
+      logger.error('OpenAI API error:', openaiResponse.status, errorData);
       
       let userFriendlyMessage = 'Transcription service temporarily unavailable';
       
@@ -87,11 +89,11 @@ export async function POST(request: Request) {
 
     const transcriptionData = await openaiResponse.json();
     
-    console.log('📥 Raw OpenAI response:', JSON.stringify(transcriptionData, null, 2));
+    logger.log('📥 Raw OpenAI response:', JSON.stringify(transcriptionData, null, 2));
     
     // Validate response
     if (!transcriptionData.text || typeof transcriptionData.text !== 'string') {
-      console.error('❌ No valid text in response');
+      logger.error('❌ No valid text in response');
       return new Response(
         JSON.stringify({ 
           error: 'Invalid transcription',
@@ -107,7 +109,7 @@ export async function POST(request: Request) {
     // Check for prompt injection
     if (transcriptionData.text.includes('Include all spoken content') ||
         transcriptionData.text.includes('Transcribe the complete audio')) {
-      console.error('❌ Prompt injection detected');
+      logger.error('❌ Prompt injection detected');
       return new Response(
         JSON.stringify({ 
           error: 'Invalid transcription',
@@ -122,7 +124,7 @@ export async function POST(request: Request) {
 
     // Validate minimum content
     if (transcriptionData.text.length < 5) {
-      console.error('❌ Transcript too short');
+      logger.error('❌ Transcript too short');
       return new Response(
         JSON.stringify({ 
           error: 'Empty transcription',
@@ -135,7 +137,7 @@ export async function POST(request: Request) {
       );
     }
 
-    console.log('✅ Valid transcription received:', {
+    logger.log('✅ Valid transcription received:', {
       textLength: transcriptionData.text.length,
       segmentCount: transcriptionData.segments?.length || 0,
       language: transcriptionData.language,
@@ -156,7 +158,7 @@ export async function POST(request: Request) {
     );
 
   } catch (error) {
-    console.error('❌ Transcription error:', error);
+    logger.error('❌ Transcription error:', error);
     
     return new Response(
       JSON.stringify({ 

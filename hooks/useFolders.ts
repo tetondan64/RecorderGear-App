@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Folder, FolderFilter } from '@/types/folder';
 import { FoldersAdapter, FolderWithCounts, FolderEvent } from '@/services/foldersAdapter';
+import logger from '@/utils/logger';
 
 export function useFolders() {
   const [folders, setFolders] = useState<FolderWithCounts[]>([]);
@@ -22,7 +23,7 @@ export function useFolders() {
       setFolders(allFolders);
     } catch (err) {
       setError('Failed to load folders');
-      console.error('Error loading folders:', err);
+      logger.error('Error loading folders:', err);
     } finally {
       setLoading(false);
     }
@@ -83,7 +84,7 @@ export function useFolders() {
   // Subscribe to folder change events
   useEffect(() => {
     const unsubscribe = adapter.watch((event?: FolderEvent) => {
-      console.log('🔄 useFolders: Received folder change event:', event);
+      logger.log('🔄 useFolders: Received folder change event:', event);
       loadFolders();
     });
     

@@ -3,6 +3,7 @@ import { AudioFile } from '@/types/audio';
 import { AudioStorageService } from '@/services/audioStorage';
 import { TranscriptService } from '@/services/transcriptService';
 import { RecordingsStore } from '@/data/recordingsStore';
+import logger from '@/utils/logger';
 
 export function useAudioFiles() {
   const [files, setFiles] = useState<AudioFile[]>([]);
@@ -36,7 +37,7 @@ export function useAudioFiles() {
       setFiles(filesWithTranscriptStatus);
     } catch (err) {
       setError('Failed to load audio files');
-      console.error('Error loading files:', err);
+      logger.error('Error loading files:', err);
     } finally {
       setLoading(false);
     }
@@ -114,7 +115,7 @@ export function useAudioFiles() {
       // Update the file in storage
       await AudioStorageService.updateFileTranscriptStatus(fileId, hasTranscript);
       
-      console.log(`✅ Updated transcript status for ${fileId}: ${hasTranscript}`);
+      logger.log(`✅ Updated transcript status for ${fileId}: ${hasTranscript}`);
     } catch (err) {
       // Rollback on error - restore original file
       if (originalFile) {
@@ -125,7 +126,7 @@ export function useAudioFiles() {
       
       const errorMessage = err instanceof Error ? err.message : 'Failed to update transcript status';
       setError(errorMessage);
-      console.error('Error updating transcript status:', err);
+      logger.error('Error updating transcript status:', err);
     }
   }, []);
 

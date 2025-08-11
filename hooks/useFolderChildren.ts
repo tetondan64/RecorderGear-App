@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Folder } from '@/types/folder';
 import { FoldersAdapter, FolderEvent, FolderWithCounts } from '@/services/foldersAdapter';
+import logger from '@/utils/logger';
 
 interface OptimisticFolder extends Folder {
   tempId: string;
@@ -46,7 +47,7 @@ export function useFolderChildren(parentId: string | null): UseFolderChildrenRes
       setError(null);
       
       if (process.env.NODE_ENV !== 'production') {
-        console.log('🔄 useFolderChildren: Refetching folders for parentId:', parentId);
+        logger.log('🔄 useFolderChildren: Refetching folders for parentId:', parentId);
       }
       
       const foldersWithCounts = await adapter.listChildren(parentId);
@@ -66,7 +67,7 @@ export function useFolderChildren(parentId: string | null): UseFolderChildrenRes
           
           if (matchingReal) {
             if (process.env.NODE_ENV !== 'production') {
-              console.log('🔄 useFolderChildren: Auto-reconciling optimistic folder:', optimistic.tempId, '→', matchingReal.id);
+              logger.log('🔄 useFolderChildren: Auto-reconciling optimistic folder:', optimistic.tempId, '→', matchingReal.id);
             }
             return false; // Remove optimistic item
           }
@@ -86,7 +87,7 @@ export function useFolderChildren(parentId: string | null): UseFolderChildrenRes
       
       const errorMessage = err instanceof Error ? err.message : 'Failed to load folders';
       setError(errorMessage);
-      console.error('useFolderChildren: Error loading folders:', err);
+      logger.error('useFolderChildren: Error loading folders:', err);
     } finally {
       if (isMountedRef.current) {
         setLoading(false);
@@ -118,7 +119,7 @@ export function useFolderChildren(parentId: string | null): UseFolderChildrenRes
     };
     
     if (process.env.NODE_ENV !== 'production') {
-      console.log('optimistic:add', { tempId, name: name.trim(), parentId });
+      logger.log('optimistic:add', { tempId, name: name.trim(), parentId });
     }
     
     setItems(prev => {
@@ -131,7 +132,7 @@ export function useFolderChildren(parentId: string | null): UseFolderChildrenRes
 
   const replaceOptimisticFolder = useCallback((tempId: string, realFolder: FolderWithCounts) => {
     if (process.env.NODE_ENV !== 'production') {
-      console.log('optimistic:replace', { tempId, realId: realFolder.id, name: realFolder.name });
+      logger.log('optimistic:replace', { tempId, realId: realFolder.id, name: realFolder.name });
     }
     
     setItems(prev => {
@@ -149,7 +150,7 @@ export function useFolderChildren(parentId: string | null): UseFolderChildrenRes
 
   const removeOptimisticFolder = useCallback((tempId: string) => {
     if (process.env.NODE_ENV !== 'production') {
-      console.log('optimistic:remove', { tempId });
+      logger.log('optimistic:remove', { tempId });
     }
     
     setItems(prev => prev.filter(item => 
@@ -164,7 +165,7 @@ export function useFolderChildren(parentId: string | null): UseFolderChildrenRes
   const handleFolderEvent = useCallback((event?: FolderEvent) => {
     if (!event) {
       if (process.env.NODE_ENV !== 'production') {
-        console.log('🔄 useFolderChildren: Generic folder change event, refetching');
+        logger.log('🔄 useFolderChildren: Generic folder change event, refetching');
       }
       debouncedRefetch();
       return;
@@ -173,7 +174,7 @@ export function useFolderChildren(parentId: string | null): UseFolderChildrenRes
     // Handle local reconcile event
     if (event.type === 'folders_local_reconcile' && event.payload.tempId && event.payload.real) {
       if (process.env.NODE_ENV !== 'production') {
-        console.log('local:reconcile', { tempId: event.payload.tempId, realId: event.payload.real.id });
+        logger.log('local:reconcile', { tempId: event.payload.tempId, realId: event.payload.real.id });
       }
       // Use the explicit replaceOptimisticFolder for local reconciliation
       replaceOptimisticFolder(event.payload.tempId, event.payload.real as FolderWithCounts);
@@ -183,7 +184,7 @@ export function useFolderChildren(parentId: string | null): UseFolderChildrenRes
     const { op, id, parentId: eventParentId } = event.payload;
     
     if (process.env.NODE_ENV !== 'production') {
-      console.log('events:create', { op, id, eventParentId, currentParentId: parentId });
+      logger.log('events:create', { op, id, eventParentId, currentParentId: parentId });
     }
 
     // Check if this event affects our current parent
@@ -193,7 +194,7 @@ export function useFolderChildren(parentId: string | null): UseFolderChildrenRes
 
     if (affectsCurrentParent) {
       if (process.env.NODE_ENV !== 'production') {
-        console.log('🎯 useFolderChildren: Event affects current parent');
+        logger.log('🎯 useFolderChildren: Event affects current parent');
       }
       
       // For create operations, try to reconcile with optimistic folders
@@ -207,7 +208,7 @@ export function useFolderChildren(parentId: string | null): UseFolderChildrenRes
         
         if (optimisticItem && 'tempId' in optimisticItem) {
           if (process.env.NODE_ENV !== 'production') {
-            console.log('🔄 useFolderChildren: Found matching optimistic folder for reconciliation:', optimisticItem.tempId);
+            logger.log('🔄 useFolderChildren: Found matching optimistic folder for reconciliation:', optimisticItem.tempId);
           }
           
           // We need to fetch the real folder data to get counts

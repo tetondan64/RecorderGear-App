@@ -25,6 +25,7 @@ import DateFilterChip from '@/components/DateFilterChip';
 import { useDateFilter } from '@/hooks/useDateFilter';
 import { TranscriptService } from '@/services/transcriptService';
 import { AudioStorageService } from '@/services/audioStorage';
+import logger from '@/utils/logger';
 
 const styles = StyleSheet.create({
   actionBar: {
@@ -252,11 +253,11 @@ export default function LibraryScreen() {
   };
 
   const handleTranscribeFile = async (file: any) => {
-    console.log('🎯 handleTranscribeFile called for:', file.name, 'hasTranscript:', file.hasTranscript);
+    logger.log('🎯 handleTranscribeFile called for:', file.name, 'hasTranscript:', file.hasTranscript);
     
     // If file already has transcript, navigate to viewer instead
     if (file.hasTranscript) {
-      console.log('📖 File already has transcript, navigating to viewer');
+      logger.log('📖 File already has transcript, navigating to viewer');
       router.push(`/viewer/${file.id}`);
       return;
     }
@@ -277,10 +278,10 @@ export default function LibraryScreen() {
     resetTranscription();
 
     try {
-      console.log('🚀 Starting transcription for:', file.name);
+      logger.log('🚀 Starting transcription for:', file.name);
       const result = await transcribeFileFromHook(file, apiKey);
       
-      console.log('💾 Creating transcript from result...');
+      logger.log('💾 Creating transcript from result...');
       const storedTranscript = await TranscriptService.createTranscriptFromWhisper(
         file.id,
         result.segments,
@@ -289,18 +290,18 @@ export default function LibraryScreen() {
         result.duration
       );
       
-      console.log('🔍 Verifying stored transcript...');
+      logger.log('🔍 Verifying stored transcript...');
       const verifyTranscript = await TranscriptService.getTranscriptByFileId(file.id);
       
       if (!verifyTranscript) {
         throw new Error('Failed to retrieve stored transcript');
       }
       
-      console.log('✅ Updating file transcript status...');
+      logger.log('✅ Updating file transcript status...');
       // Update transcript status without full refresh
       await updateFileTranscriptStatus(file.id, true);
       
-      console.log('🎉 Transcription completed successfully, navigating to viewer...');
+      logger.log('🎉 Transcription completed successfully, navigating to viewer...');
       setTimeout(() => {
         setShowTranscriptionModal(false);
         setTranscribingFile(null);
@@ -309,7 +310,7 @@ export default function LibraryScreen() {
       }, 1000);
       
     } catch (error) {
-      console.error('❌ Transcription failed:', error);
+      logger.error('❌ Transcription failed:', error);
       // Don't navigate away on error - keep the modal open to show error state
     }
   };
