@@ -1,22 +1,8 @@
 import React, { createContext, useContext, useState, useRef, useCallback, ReactNode } from 'react';
 import { StorageService } from '@/services/storageService';
+import { SummaryStyle, SummaryStylesChangedEvent } from '@/types/summary';
 
-interface SummaryStyle {
-  id: string;
-  name: string;
-  prompt: string;
-  updatedAt: number;
-  builtIn: boolean;
-}
-
-type ChangeReason = 'seed' | 'create' | 'update' | 'remove';
-
-interface ChangeEvent {
-  type: 'summaryStyles/changed';
-  reason: ChangeReason;
-}
-
-type Listener = (event: ChangeEvent) => void;
+type Listener = (event: SummaryStylesChangedEvent) => void;
 
 interface SummaryStylesContextType {
   styles: SummaryStyle[];
@@ -27,8 +13,8 @@ interface SummaryStylesContextType {
   create: (style: Omit<SummaryStyle, 'id' | 'updatedAt' | 'builtIn'>) => Promise<SummaryStyle>;
   update: (id: string, updates: Partial<Omit<SummaryStyle, 'id' | 'builtIn'>>) => Promise<SummaryStyle | null>;
   remove: (id: string) => Promise<void>;
-  on: (event: ChangeEvent['type'], listener: Listener) => void;
-  off: (event: ChangeEvent['type'], listener: Listener) => void;
+  on: (event: 'summaryStyles/changed', listener: Listener) => void;
+  off: (event: 'summaryStyles/changed', listener: Listener) => void;
 }
 
 const SummaryStylesContext = createContext<SummaryStylesContextType | null>(null);
@@ -60,10 +46,13 @@ export function SummaryStylesProvider({ children }: ProviderProps) {
   const listenersRef = useRef<Set<Listener>>(new Set());
   const writeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  const emit = useCallback((reason: ChangeReason) => {
-    const event: ChangeEvent = { type: 'summaryStyles/changed', reason };
-    listenersRef.current.forEach(listener => listener(event));
-  }, []);
+  const emit = useCallback(
+    (reason: SummaryStylesChangedEvent['reason'], style?: SummaryStyle) => {
+      const event: SummaryStylesChangedEvent = { reason, style };
+      listenersRef.current.forEach(listener => listener(event));
+    },
+    []
+  );
 
   const persist = useCallback((next: SummaryStyle[]) => {
     if (writeTimeoutRef.current) {
@@ -117,7 +106,7 @@ export function SummaryStylesProvider({ children }: ProviderProps) {
       persist(next);
       return next;
     });
-    emit('create');
+    emit('create', newStyle);
     return newStyle;
   }, [persist, emit]);
 
@@ -134,25 +123,32 @@ export function SummaryStylesProvider({ children }: ProviderProps) {
       persist(next);
       return next;
     });
-    if (updated) emit('update');
+    if (updated) emit('update', updated);
     return updated;
   }, [persist, emit]);
 
   const remove = useCallback(async (id: string) => {
+    let removed: SummaryStyle | undefined;
     setStyles(prev => {
-      const next = prev.filter(s => s.id !== id);
+      const next = prev.filter(s => {
+        if (s.id === id) {
+          removed = s;
+          return false;
+        }
+        return true;
+      });
       persist(next);
       return next;
     });
-    emit('remove');
+    emit('remove', removed);
   }, [persist, emit]);
 
-  const on = useCallback((event: ChangeEvent['type'], listener: Listener) => {
+  const on = useCallback((event: 'summaryStyles/changed', listener: Listener) => {
     if (event !== 'summaryStyles/changed') return;
     listenersRef.current.add(listener);
   }, []);
 
-  const off = useCallback((event: ChangeEvent['type'], listener: Listener) => {
+  const off = useCallback((event: 'summaryStyles/changed', listener: Listener) => {
     if (event !== 'summaryStyles/changed') return;
     listenersRef.current.delete(listener);
   }, []);
@@ -185,5 +181,5 @@ export function useSummaryStyles(): SummaryStylesContextType {
   return ctx;
 }
 
-export type { SummaryStyle, ChangeEvent as SummaryStylesChangeEvent };
+export type { SummaryStyle, SummaryStylesChangedEvent };
 

@@ -1,7 +1,9 @@
 export interface SummaryStyle {
   id: string;
   name: string;
-  description: string;
+  prompt: string;
+  updatedAt: number;
+  builtIn: boolean;
 }
 
 export interface SavedSummary {
@@ -10,4 +12,9 @@ export interface SavedSummary {
   styleId: string;
   content: string;
   createdAt: number;
+}
+
+export interface SummaryStylesChangedEvent {
+  reason: 'seed' | 'create' | 'update' | 'remove';
+  style?: SummaryStyle;
 }
