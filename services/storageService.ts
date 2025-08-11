@@ -36,6 +36,16 @@ export class StorageService {
     }
   }
 
+  static setItemDebounced(key: string, value: string, delay: number): () => void {
+    const timeout = setTimeout(() => {
+      StorageService.setItem(key, value).catch(error => {
+        console.error('StorageService.setItemDebounced error:', error);
+      });
+    }, delay);
+
+    return () => clearTimeout(timeout);
+  }
+
   static async removeItem(key: string): Promise<void> {
     try {
       if (Platform.OS === 'web') {

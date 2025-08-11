@@ -13,19 +13,18 @@ const SummaryStylesContext = createContext<SummaryStylesContextValue | undefined
 
 export function SummaryStylesProvider({ children }: { children: ReactNode }) {
   const [styles, setStylesState] = useState<SummaryStyle[]>([]);
-    // eslint-disable-next-line no-undef
-  const writeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const writeClearRef = useRef<(() => void) | null>(null);
 
   const setStyles = (newStyles: SummaryStyle[]) => {
     setStylesState(newStyles);
-    if (writeTimeoutRef.current) {
-      clearTimeout(writeTimeoutRef.current);
+    if (writeClearRef.current) {
+      writeClearRef.current();
     }
-    writeTimeoutRef.current = setTimeout(() => {
-      StorageService.setItem(STORAGE_KEY, JSON.stringify(newStyles)).catch(err => {
-        console.error('Failed to save summary styles:', err);
-      });
-    }, 100);
+    writeClearRef.current = StorageService.setItemDebounced(
+      STORAGE_KEY,
+      JSON.stringify(newStyles),
+      100,
+    );
   };
 
   useEffect(() => {
@@ -43,9 +42,7 @@ export function SummaryStylesProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     return () => {
-      if (writeTimeoutRef.current) {
-        clearTimeout(writeTimeoutRef.current);
-      }
+      writeClearRef.current?.();
     };
   }, []);
 

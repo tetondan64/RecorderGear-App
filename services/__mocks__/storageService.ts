@@ -9,6 +9,10 @@ export const StorageService = {
   setItem: jest.fn(async (key: string, value: string) => {
     store[key] = value;
   }),
+  setItemDebounced: jest.fn((key: string, value: string) => {
+    store[key] = value;
+    return jest.fn();
+  }),
   removeItem: jest.fn(async (key: string) => {
     delete store[key];
   }),

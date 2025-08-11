@@ -1,6 +1,9 @@
 import React, { createContext, useContext, useState, useRef, useCallback, ReactNode, useEffect } from 'react';
+import { Platform } from 'react-native';
 
 import { StorageService } from '@/services/storageService';
+import type { SummaryStyle, SummaryStylesChangedEvent } from '@/types/summary';
+import { v4 as uuid } from 'uuid';
 
 
 type Listener = (event: SummaryStylesChangedEvent) => void;
@@ -41,9 +44,38 @@ export function SummaryStylesProvider({ children }: ProviderProps) {
   const [error, setError] = useState<string | null>(null);
   const hydratedRef = useRef(false);
   const listenersRef = useRef<Set<Listener>>(new Set());
-  const writeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const writeClearRef = useRef<(() => void) | null>(null);
   const syncChannelRef = useRef<BroadcastChannel | null>(null);
   const instanceIdRef = useRef<string>(Math.random().toString(36).substring(2, 15));
+
+  const emit = useCallback(
+    (reason: SummaryStylesChangedEvent['reason'], arg?: SummaryStyle | boolean) => {
+      let style: SummaryStyle | undefined;
+      let skipBroadcast = false;
+
+      if (typeof arg === 'boolean') {
+        skipBroadcast = arg;
+      } else if (arg) {
+        style = arg;
+      }
+
+      const event: SummaryStylesChangedEvent = { reason, ...(style ? { style } : {}) };
+      listenersRef.current.forEach(listener => listener(event));
+
+      if (!skipBroadcast && syncChannelRef.current) {
+        try {
+          syncChannelRef.current.postMessage({
+            type: 'summaryStyles/changed',
+            reason,
+            instanceId: instanceIdRef.current,
+          });
+        } catch (err) {
+          console.warn('Failed to broadcast summary styles change:', err);
+        }
+      }
+    },
+    [],
+  );
 
 
   const refresh = useCallback(async () => {
@@ -67,14 +99,14 @@ export function SummaryStylesProvider({ children }: ProviderProps) {
   }, []);
 
   const persist = useCallback((next: SummaryStyle[]) => {
-    if (writeTimeoutRef.current) {
-      clearTimeout(writeTimeoutRef.current);
+    if (writeClearRef.current) {
+      writeClearRef.current();
     }
-    writeTimeoutRef.current = setTimeout(() => {
-      StorageService.setItem(STORAGE_KEY, JSON.stringify(next)).catch(err => {
-        console.error('Failed to persist summary styles:', err);
-      });
-    }, 300);
+    writeClearRef.current = StorageService.setItemDebounced(
+      STORAGE_KEY,
+      JSON.stringify(next),
+      300,
+    );
   }, []);
 
   useEffect(() => {
@@ -103,9 +135,7 @@ export function SummaryStylesProvider({ children }: ProviderProps) {
 
   useEffect(() => {
     return () => {
-      if (writeTimeoutRef.current) {
-        clearTimeout(writeTimeoutRef.current);
-      }
+      writeClearRef.current?.();
     };
   }, []);
 
@@ -146,9 +176,7 @@ export function SummaryStylesProvider({ children }: ProviderProps) {
 
   useEffect(() => {
     return () => {
-      if (writeTimeoutRef.current) {
-        clearTimeout(writeTimeoutRef.current);
-      }
+      writeClearRef.current?.();
     };
   }, []);
 
