@@ -469,7 +469,7 @@ export default function FileCard({
   };
 
   const handleProgressPress = (event: any) => {
-    if (!file.duration) return;
+    if (Platform.OS !== 'web' || !file.duration) return;
     
     const progressContainer = event.currentTarget;
     const rect = progressContainer.getBoundingClientRect();
@@ -502,6 +502,7 @@ export default function FileCard({
   };
 
   useEffect(() => {
+    if (Platform.OS !== 'web') return;
     if (isProgressDragging) {
       const handleGlobalMouseUp = () => {
         setIsProgressDragging(false);
@@ -570,6 +571,13 @@ export default function FileCard({
   const progressPercentage = file.duration && file.duration > 0 
     ? (displayTime / file.duration) * 100 
     : 0;
+
+  const progressBarProps = Platform.OS === 'web' ? {
+    onMouseDown: handleMouseDown,
+    onMouseMove: handleMouseMove,
+    onMouseUp: handleMouseUp,
+    ['data-progress-container']: file.id,
+  } : {};
 
   return (
     <View>
@@ -726,21 +734,15 @@ export default function FileCard({
                         {/* Progress Bar */}
                         <View
                           style={styles.progressContainer}
-                          onMouseDown={handleMouseDown}
-                          onMouseMove={handleMouseMove}
-                          onMouseUp={handleMouseUp}
-                          data-progress-container={file.id}
+                          {...(progressBarProps as any)}
                         >
                           <View style={styles.progressTrack}>
                             <View style={styles.progressBackground} />
                             <View style={[styles.progressFill, { width: `${progressPercentage}%` }]} />
-                            <View
-                              style={[styles.progressThumb, { left: `${progressPercentage}%` }]}
-                              onMouseDown={(e) => {
-                                e.stopPropagation();
-                                setIsProgressDragging(true);
-                              }}
-                            />
+                              <View
+                                style={[styles.progressThumb, { left: `${progressPercentage}%` }]}
+                                {...(Platform.OS === 'web' ? { onMouseDown: (e: any) => { e.stopPropagation(); setIsProgressDragging(true); } } : {})}
+                              />
                           </View>
                         </View>
                       </View>
