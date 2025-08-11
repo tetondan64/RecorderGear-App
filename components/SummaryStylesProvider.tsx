@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useRef, useState, ReactNode } from 'react';
 import { SummaryStyle } from '@/types/summary';
 import { StorageService } from '@/services/storageService';
+import { safeParse, safeStringify } from '@/utils/json';
 
 const STORAGE_KEY = 'summary.styles.v1';
 
@@ -22,9 +23,12 @@ export function SummaryStylesProvider({ children }: { children: ReactNode }) {
       clearTimeout(writeTimeoutRef.current);
     }
     writeTimeoutRef.current = setTimeout(() => {
-      StorageService.setItem(STORAGE_KEY, JSON.stringify(newStyles)).catch(err => {
-        console.error('Failed to save summary styles:', err);
-      });
+      const json = safeStringify(newStyles);
+      if (json) {
+        StorageService.setItem(STORAGE_KEY, json).catch(err => {
+          console.error('Failed to save summary styles:', err);
+        });
+      }
     }, 100);
   };
 
@@ -33,7 +37,10 @@ export function SummaryStylesProvider({ children }: { children: ReactNode }) {
       try {
         const data = await StorageService.getItem(STORAGE_KEY);
         if (data) {
-          setStylesState(JSON.parse(data));
+          const parsed = safeParse<SummaryStyle[] | null>(data, null);
+          if (parsed) {
+            setStylesState(parsed);
+          }
         }
       } catch (err) {
         console.error('Failed to load summary styles:', err);
