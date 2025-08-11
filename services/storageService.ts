@@ -1,7 +1,10 @@
 import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { get, set, del } from 'idb-keyval';
+import { Platform } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { get, set, del, keys } from 'idb-keyval';
 import logger from '@/utils/logger';
+
 
 export class StorageService {
   /**
@@ -53,12 +56,11 @@ export class StorageService {
   static async getAllKeys(): Promise<string[]> {
     try {
       if (Platform.OS === 'web') {
-        // IndexedDB doesn't have a direct getAllKeys equivalent
-        // We'll need to track keys manually or use a different approach
-        // For now, return empty array as this is mainly used for debugging
-        return [];
+        // Use idb-keyval's helper to retrieve all keys from IndexedDB
+        const allKeys = await keys();
+        return allKeys.map(key => String(key));
       } else {
-        return await AsyncStorage.getAllKeys();
+        return (await AsyncStorage.getAllKeys()) as string[];
       }
     } catch (error) {
       logger.error('StorageService.getAllKeys error:', error);
