@@ -1,10 +1,8 @@
 import React, { createContext, useContext, useState, useRef, useCallback, ReactNode, useEffect } from 'react';
+import { Platform } from 'react-native';
 
 import { StorageService } from '@/services/storageService';
-import { safeParse, safeStringify } from '@/utils/json';
-import { v4 as uuid } from 'uuid';
-import { Platform } from 'react-native';
-import { SummaryStyle, SummaryStylesChangedEvent } from '@/types/summary';
+
 
 
 type Listener = (event: SummaryStylesChangedEvent) => void;
@@ -50,21 +48,7 @@ export function SummaryStylesProvider({ children }: ProviderProps) {
   const instanceIdRef = useRef<string>(Math.random().toString(36).substring(2, 15));
 
   const emit = useCallback(
-    (reason: SummaryStylesChangedEvent['reason'], style?: SummaryStyle, fromBroadcast = false) => {
-      listenersRef.current.forEach(listener => listener({ reason, style }));
-      if (!fromBroadcast && syncChannelRef.current) {
-        try {
-          syncChannelRef.current.postMessage({
-            type: 'summaryStyles/changed',
-            instanceId: instanceIdRef.current,
-            reason,
-          });
-        } catch (err) {
-          console.warn('Failed to broadcast summary style change:', err);
-        }
-      }
-    },
-    []
+
   );
 
   const refresh = useCallback(async () => {
@@ -112,7 +96,7 @@ export function SummaryStylesProvider({ children }: ProviderProps) {
         channel.onmessage = async event => {
           if (event.data.instanceId !== instanceIdRef.current && event.data.type === 'summaryStyles/changed') {
             await refresh();
-            emit(event.data.reason, undefined, true);
+
           }
         };
         syncChannelRef.current = channel;
@@ -143,16 +127,13 @@ export function SummaryStylesProvider({ children }: ProviderProps) {
         const parsed = safeParse<SummaryStyle[] | null>(data, null);
         if (parsed) {
           setStyles(parsed);
-        } else {
-          const now = Date.now();
-          const seeded = DEFAULT_STYLES.map(s => ({ ...s, updatedAt: now }));
+
           setStyles(seeded);
           persist(seeded);
           emit('seed');
         }
       } else {
-        const now = Date.now();
-        const seeded = DEFAULT_STYLES.map(s => ({ ...s, updatedAt: now }));
+        const seeded = DEFAULT_STYLES.map(s => ({ ...s, updatedAt: Date.now() }));
         setStyles(seeded);
         persist(seeded);
         emit('seed');
