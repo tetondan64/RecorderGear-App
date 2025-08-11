@@ -6,6 +6,7 @@ import type { SummaryStyle, SummaryStylesChangedEvent } from '@/types/summary';
 import { v4 as uuid } from 'uuid';
 
 
+
 type Listener = (event: SummaryStylesChangedEvent) => void;
 
 interface SummaryStylesContextType {
@@ -49,44 +50,17 @@ export function SummaryStylesProvider({ children }: ProviderProps) {
   const instanceIdRef = useRef<string>(Math.random().toString(36).substring(2, 15));
 
   const emit = useCallback(
-    (reason: SummaryStylesChangedEvent['reason'], arg?: SummaryStyle | boolean) => {
-      let style: SummaryStyle | undefined;
-      let skipBroadcast = false;
-
-      if (typeof arg === 'boolean') {
-        skipBroadcast = arg;
-      } else if (arg) {
-        style = arg;
-      }
-
-      const event: SummaryStylesChangedEvent = { reason, ...(style ? { style } : {}) };
-      listenersRef.current.forEach(listener => listener(event));
-
-      if (!skipBroadcast && syncChannelRef.current) {
-        try {
-          syncChannelRef.current.postMessage({
-            type: 'summaryStyles/changed',
-            reason,
-            instanceId: instanceIdRef.current,
-          });
-        } catch (err) {
-          console.warn('Failed to broadcast summary styles change:', err);
-        }
-      }
-    },
-    [],
-  );
 
 
   const refresh = useCallback(async () => {
     try {
       const data = await StorageService.getItem(STORAGE_KEY);
       if (data) {
-        try {
-          const parsed: SummaryStyle[] = JSON.parse(data);
+        const parsed = safeParse<SummaryStyle[] | null>(data, null);
+        if (parsed) {
           setStyles(parsed);
-        } catch (parseErr) {
-          console.error('Failed to parse summary styles:', parseErr);
+        } else {
+          console.error('Failed to parse summary styles');
           setError('Failed to parse summary styles');
           await StorageService.removeItem(STORAGE_KEY);
           setStyles([]);
@@ -102,11 +76,7 @@ export function SummaryStylesProvider({ children }: ProviderProps) {
     if (writeClearRef.current) {
       writeClearRef.current();
     }
-    writeClearRef.current = StorageService.setItemDebounced(
-      STORAGE_KEY,
-      JSON.stringify(next),
-      300,
-    );
+
   }, []);
 
   useEffect(() => {
@@ -120,7 +90,7 @@ export function SummaryStylesProvider({ children }: ProviderProps) {
         channel.onmessage = async event => {
           if (event.data.instanceId !== instanceIdRef.current && event.data.type === 'summaryStyles/changed') {
             await refresh();
-            emit(event.data.reason, true);
+
           }
         };
         syncChannelRef.current = channel;
@@ -146,21 +116,16 @@ export function SummaryStylesProvider({ children }: ProviderProps) {
     try {
       const data = await StorageService.getItem(STORAGE_KEY);
       if (data) {
-        try {
-          const parsed: SummaryStyle[] = JSON.parse(data);
+        const parsed = safeParse<SummaryStyle[] | null>(data, null);
+        if (parsed) {
           setStyles(parsed);
-        } catch (parseErr) {
 
-          const now = Date.now();
-          const seeded = DEFAULT_STYLES.map(s => ({ ...s, updatedAt: now }));
           setStyles(seeded);
           persist(seeded);
           emit('seed');
-
         }
       } else {
-        const now = Date.now();
-        const seeded = DEFAULT_STYLES.map(s => ({ ...s, updatedAt: now }));
+        const seeded = DEFAULT_STYLES.map(s => ({ ...s, updatedAt: Date.now() }));
         setStyles(seeded);
         persist(seeded);
         emit('seed');
