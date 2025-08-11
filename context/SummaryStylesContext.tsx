@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useRef, useCallback, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useRef, useCallback, ReactNode, useEffect } from 'react';
 import { StorageService } from '@/services/storageService';
 
 interface SummaryStyle {
@@ -83,8 +83,17 @@ export function SummaryStylesProvider({ children }: ProviderProps) {
     try {
       const data = await StorageService.getItem(STORAGE_KEY);
       if (data) {
-        const parsed: SummaryStyle[] = JSON.parse(data);
-        setStyles(parsed);
+        try {
+          const parsed: SummaryStyle[] = JSON.parse(data);
+          setStyles(parsed);
+        } catch (parseErr) {
+          console.warn('Invalid summary styles in storage, resetting to defaults:', parseErr);
+          const now = Date.now();
+          const seeded = DEFAULT_STYLES.map(s => ({ ...s, updatedAt: now }));
+          setStyles(seeded);
+          persist(seeded);
+          emit('seed');
+        }
       } else {
         const now = Date.now();
         const seeded = DEFAULT_STYLES.map(s => ({ ...s, updatedAt: now }));
@@ -100,6 +109,14 @@ export function SummaryStylesProvider({ children }: ProviderProps) {
       setLoading(false);
     }
   }, [emit, persist]);
+
+  useEffect(() => {
+    return () => {
+      if (writeTimeoutRef.current) {
+        clearTimeout(writeTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const list = useCallback(() => {
     return [...styles].sort((a, b) => b.updatedAt - a.updatedAt);
