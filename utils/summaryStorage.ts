@@ -1,5 +1,6 @@
 import { StorageService } from '@/services/storageService';
 import { SavedSummary } from '@/types/summary';
+import { safeParse, safeStringify } from '@/utils/json';
 
 const SUMMARY_PREFIX = 'recordingSummary:v1:';
 
@@ -12,10 +13,12 @@ export async function getSavedSummary(id: string): Promise<SavedSummary | null> 
   try {
     const json = await StorageService.getItem(key);
     if (!json) return null;
-    return JSON.parse(json) as SavedSummary;
+    const parsed = safeParse<SavedSummary | null>(json, null);
+    if (parsed) return parsed;
+    await StorageService.removeItem(key);
+    return null;
   } catch (error) {
     console.error('Failed to get saved summary:', error);
-    // Reset corrupted data
     await StorageService.removeItem(key);
     return null;
   }
@@ -27,17 +30,19 @@ export async function saveSummary(id: string, summary: SavedSummary): Promise<vo
     // Validate existing data is valid JSON, otherwise reset
     const existing = await StorageService.getItem(key);
     if (existing) {
-      try {
-        JSON.parse(existing);
-      } catch {
+      const valid = safeParse<any | null>(existing, null);
+      if (!valid) {
         await StorageService.removeItem(key);
       }
     }
 
-    await StorageService.setItem(key, JSON.stringify(summary));
+    const json = safeStringify(summary);
+    if (!json) {
+      throw new Error('Failed to serialize summary');
+    }
+    await StorageService.setItem(key, json);
   } catch (error) {
     console.error('Failed to save summary:', error);
-    // If something went wrong during save, remove potentially corrupted data
     await StorageService.removeItem(key);
     throw error;
   }
