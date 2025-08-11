@@ -1,6 +1,7 @@
 import { Tag } from '@/types/tag';
 import { StorageService } from './storageService';
 import logger from '@/utils/logger';
+import { generateUniqueId } from '@/utils/id';
 
 export class TagService {
   private static readonly STORAGE_KEY = 'tags';
@@ -19,9 +20,6 @@ export class TagService {
     '#6366F1', // Indigo
   ];
 
-  static generateUniqueId(): string {
-    return Date.now().toString() + '_' + Math.random().toString(36).substring(2, 15);
-  }
 
   static getRandomColor(): string {
     return this.TAG_COLORS[Math.floor(Math.random() * this.TAG_COLORS.length)];
@@ -59,7 +57,7 @@ export class TagService {
       }
 
       const newTag: Tag = {
-        id: this.generateUniqueId(),
+        id: generateUniqueId(),
         name: trimmedName,
         createdAt: Date.now(),
         color: this.getRandomColor(),

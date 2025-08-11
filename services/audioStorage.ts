@@ -3,6 +3,7 @@ import { Platform } from 'react-native';
 import { AudioFile, AudioFileMetadata } from '@/types/audio';
 import { StorageService } from './storageService';
 import logger from '@/utils/logger';
+import { generateUniqueId } from '@/utils/id';
 
 const STORAGE_KEY = 'audio_files';
 const AUDIO_DIR = `${FileSystem.documentDirectory}RecorderGearApp/AudioFiles/`;
@@ -54,7 +55,7 @@ export class AudioStorageService {
   static async saveAudioFile(fileUri: string, fileName: string, fileSize: number, mimeType?: string): Promise<AudioFile> {
     await this.initializeStorage();
     
-    const fileId = this.generateUniqueId();
+    const fileId = generateUniqueId();
     const fileExtension = fileName.split('.').pop() || 'mp3';
     const sanitizedFileName = fileName.replace(/[^a-zA-Z0-9.-]/g, '_');
     
@@ -179,9 +180,6 @@ export class AudioStorageService {
     });
   }
 
-  private static generateUniqueId(): string {
-    return Date.now().toString() + '_' + Math.random().toString(36).substring(2, 15);
-  }
 
   static async checkForDuplicate(fileName: string, fileSize: number): Promise<boolean> {
     try {

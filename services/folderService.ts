@@ -3,6 +3,7 @@ import { StorageService } from './storageService';
 import { AudioStorageService } from './audioStorage';
 import { RecordingsStore } from '@/data/recordingsStore';
 import logger from '@/utils/logger';
+import { generateUniqueId } from '@/utils/id';
 
 // Unified storage key for all folder operations
 const UNIFIED_STORAGE_KEY = 'rg.folders.v1';
@@ -30,9 +31,6 @@ export class FolderService {
     }
   }
 
-  static generateUniqueId(): string {
-    return Date.now().toString() + '_' + Math.random().toString(36).substring(2, 15);
-  }
 
   private static generateUniqueFolderName(baseName: string, existingNames: Set<string>): string {
     let counter = 2;
@@ -95,7 +93,7 @@ export class FolderService {
         // Check for name collision
         if (seenNamesInFinal.has(oldFolder.name.toLowerCase())) {
           const uniqueName = this.generateUniqueFolderName(oldFolder.name, seenNamesInFinal);
-          const newId = this.generateUniqueId();
+          const newId = generateUniqueId();
           
           logger.log('🔄 Resolving name collision:', {
             originalName: oldFolder.name,
@@ -252,7 +250,7 @@ export class FolderService {
       }
 
       const newFolder: Folder = {
-        id: this.generateUniqueId(),
+        id: generateUniqueId(),
         name: trimmedName,
         parentId: parentId || null,
         createdAt: Date.now(),
