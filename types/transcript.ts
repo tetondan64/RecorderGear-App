@@ -6,6 +6,13 @@ export interface TranscriptSegment {
   confidence?: number;
 }
 
+export interface TranscriptSegmentPayload {
+  id: number | string;
+  start: number;
+  end: number;
+  text: string;
+}
+
 export interface Transcript {
   id: string;
   fileId: string;

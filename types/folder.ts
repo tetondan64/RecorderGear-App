@@ -1,3 +1,5 @@
+import { StoreEvent } from './store';
+
 export interface Folder {
   id: string;
   name: string;
@@ -13,7 +15,7 @@ export interface FolderFilter {
   folderName: string | null;
 }
 
-export interface FolderEvent {
+export interface FolderEvent extends StoreEvent {
   type: 'folders_changed' | 'folders_local_reconcile';
   payload: {
     op?: 'create' | 'rename' | 'move' | 'delete'; // Made optional for local_reconcile
