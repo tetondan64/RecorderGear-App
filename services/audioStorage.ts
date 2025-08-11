@@ -8,6 +8,24 @@ const STORAGE_KEY = 'audio_files';
 const AUDIO_DIR = `${FileSystem.documentDirectory}RecorderGearApp/AudioFiles/`;
 
 export class AudioStorageService {
+  private static objectUrls = new Set<string>();
+
+  private static trackObjectUrl(url: string): void {
+    this.objectUrls.add(url);
+  }
+
+  private static revokeObjectUrl(url: string): void {
+    if (this.objectUrls.has(url)) {
+      URL.revokeObjectURL(url);
+      this.objectUrls.delete(url);
+    }
+  }
+
+  private static revokeAllObjectUrls(): void {
+    this.objectUrls.forEach(url => URL.revokeObjectURL(url));
+    this.objectUrls.clear();
+  }
+
   static async initializeStorage(): Promise<void> {
     if (Platform.OS === 'web') {
       return; // Skip file system operations on web
@@ -48,10 +66,11 @@ export class AudioStorageService {
       try {
         const response = await fetch(fileUri);
         const blob = await response.blob();
-        
+
         // Convert to Base64 for persistent storage
         const base64Data = await this.blobToBase64(blob);
         destinationUri = URL.createObjectURL(blob);
+        this.trackObjectUrl(destinationUri);
         
         // Get audio duration
         audioDuration = await this.getAudioDuration(destinationUri);
@@ -218,10 +237,12 @@ export class AudioStorageService {
       
       // For web platform, recreate blob URLs from Base64 data
       if (Platform.OS === 'web') {
+        this.revokeAllObjectUrls();
         const processedFiles = files.map(file => {
           if (file.base64Data) {
             const blob = this.base64ToBlob(file.base64Data, file.mimeType || 'audio/mpeg');
             const blobUrl = URL.createObjectURL(blob);
+            this.trackObjectUrl(blobUrl);
             return { ...file, uri: blobUrl };
           }
           return file;
@@ -241,8 +262,11 @@ export class AudioStorageService {
     try {
       const files = await this.getAllFiles();
       const fileToDelete = files.find(f => f.id === fileId);
-      
+
       if (fileToDelete) {
+        if (Platform.OS === 'web' && fileToDelete.uri) {
+          this.revokeObjectUrl(fileToDelete.uri);
+        }
         // Delete physical file (only on native platforms)
         if (Platform.OS !== 'web') {
           const fileInfo = await FileSystem.getInfoAsync(fileToDelete.uri);
