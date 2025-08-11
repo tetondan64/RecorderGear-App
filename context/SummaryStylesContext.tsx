@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useRef, useCallback, ReactNode, useEffect } from 'react';
+
 import { StorageService } from '@/services/storageService';
 
 interface SummaryStyle {
@@ -59,10 +60,51 @@ export function SummaryStylesProvider({ children }: ProviderProps) {
   const hydratedRef = useRef(false);
   const listenersRef = useRef<Set<Listener>>(new Set());
   const writeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const syncChannelRef = useRef<BroadcastChannel | null>(null);
+  const instanceIdRef = useRef<string>(Math.random().toString(36).substring(2, 15));
 
-  const emit = useCallback((reason: ChangeReason) => {
+  const emit = useCallback((reason: ChangeReason, fromBroadcast: boolean = false) => {
     const event: ChangeEvent = { type: 'summaryStyles/changed', reason };
+
+    if (
+      Platform.OS === 'web' &&
+      typeof window !== 'undefined' &&
+      typeof window.BroadcastChannel !== 'undefined' &&
+      !fromBroadcast &&
+      syncChannelRef.current
+    ) {
+      try {
+        syncChannelRef.current.postMessage({
+          type: 'summaryStyles/changed',
+          reason,
+          instanceId: instanceIdRef.current,
+        });
+      } catch (err) {
+        console.warn('Failed to broadcast summary styles change:', err);
+      }
+    }
+
     listenersRef.current.forEach(listener => listener(event));
+  }, []);
+
+  const refresh = useCallback(async () => {
+    try {
+      const data = await StorageService.getItem(STORAGE_KEY);
+      if (data) {
+        try {
+          const parsed: SummaryStyle[] = JSON.parse(data);
+          setStyles(parsed);
+        } catch (parseErr) {
+          console.error('Failed to parse summary styles:', parseErr);
+          setError('Failed to parse summary styles');
+          await StorageService.removeItem(STORAGE_KEY);
+          setStyles([]);
+        }
+      }
+    } catch (err: any) {
+      console.error('Failed to refresh summary styles:', err);
+      setError(err?.message || 'Failed to refresh');
+    }
   }, []);
 
   const persist = useCallback((next: SummaryStyle[]) => {
@@ -76,6 +118,38 @@ export function SummaryStylesProvider({ children }: ProviderProps) {
     }, 300);
   }, []);
 
+  useEffect(() => {
+    if (
+      Platform.OS === 'web' &&
+      typeof window !== 'undefined' &&
+      typeof window.BroadcastChannel !== 'undefined'
+    ) {
+      try {
+        const channel = new window.BroadcastChannel('summary-styles-sync');
+        channel.onmessage = async event => {
+          if (event.data.instanceId !== instanceIdRef.current && event.data.type === 'summaryStyles/changed') {
+            await refresh();
+            emit(event.data.reason, true);
+          }
+        };
+        syncChannelRef.current = channel;
+        return () => {
+          channel.close();
+        };
+      } catch (err) {
+        console.warn('Failed to initialize BroadcastChannel for summary styles:', err);
+      }
+    }
+  }, [emit, refresh]);
+
+  useEffect(() => {
+    return () => {
+      if (writeTimeoutRef.current) {
+        clearTimeout(writeTimeoutRef.current);
+      }
+    };
+  }, []);
+
   const hydrate = useCallback(async () => {
     if (hydratedRef.current) return;
     setLoading(true);
@@ -87,12 +161,13 @@ export function SummaryStylesProvider({ children }: ProviderProps) {
           const parsed: SummaryStyle[] = JSON.parse(data);
           setStyles(parsed);
         } catch (parseErr) {
-          console.warn('Invalid summary styles in storage, resetting to defaults:', parseErr);
+
           const now = Date.now();
           const seeded = DEFAULT_STYLES.map(s => ({ ...s, updatedAt: now }));
           setStyles(seeded);
           persist(seeded);
           emit('seed');
+
         }
       } else {
         const now = Date.now();
