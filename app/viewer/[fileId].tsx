@@ -12,6 +12,7 @@ import { AudioStorageService } from '@/services/audioStorage';
 import { TranscriptService } from '@/services/transcriptService';
 import { AudioFile } from '@/types/audio';
 import { Transcript, TranscriptSegment } from '@/types/transcript';
+import logger from '@/utils/logger';
 
 export default function ViewerScreen() {
   const { fileId } = useLocalSearchParams<{ fileId: string }>();
@@ -121,7 +122,7 @@ export default function ViewerScreen() {
           setLastAutoScrollTime(Date.now());
         } catch (error) {
           // Fallback to scrollToOffset if scrollToIndex fails
-          console.warn('ScrollToIndex failed, using fallback scroll');
+          logger.warn('ScrollToIndex failed, using fallback scroll');
           const estimatedOffset = segmentIndex * 100; // Estimate based on average segment height
           flatListRef.current.scrollToOffset({
             offset: estimatedOffset,
@@ -153,7 +154,7 @@ export default function ViewerScreen() {
       // Scroll to the segment
       scrollToActiveSegment(segment.id);
       
-      console.log(`Seeking to timestamp: ${timestamp}s`);
+      logger.log(`Seeking to timestamp: ${timestamp}s`);
     }
   };
 
@@ -221,7 +222,7 @@ export default function ViewerScreen() {
   };
 
   const handleSearchMatchSelect = (segment: TranscriptSegment, matchIndex: number) => {
-    console.log('🔍 Search match selected:', {
+    logger.log('🔍 Search match selected:', {
       segmentId: segment.id,
       startTime: segment.startTime,
       text: segment.text.substring(0, 50) + '...'
@@ -239,7 +240,7 @@ export default function ViewerScreen() {
     setIsUserScrolling(false);
     scrollToActiveSegment(segment.id);
     
-    console.log(`🔍 Navigated to search match at ${segment.startTime}s`);
+    logger.log(`🔍 Navigated to search match at ${segment.startTime}s`);
   };
 
   const formatFileSize = (bytes: number): string => {
@@ -402,12 +403,11 @@ export default function ViewerScreen() {
         <AudioPlayerModule
           ref={audioPlayerRef}
           audioFile={file}
-          onPlayPause={() => console.log('Play/Pause')}
-          onSkipBack={() => console.log('Skip back')}
-          onSkipForward={() => console.log('Skip forward')}
-          onSpeedChange={(speed) => console.log('Speed changed:', speed)}
-          onSeek={(time) => {
-            console.log('Seek to:', time);
+          onPlayPause={() => {}}
+          onSkipBack={() => {}}
+          onSkipForward={() => {}}
+          onSpeedChange={() => {}}
+          onSeek={(_time) => {
             // Reset user scrolling when seeking manually
             setIsUserScrolling(false);
           }}

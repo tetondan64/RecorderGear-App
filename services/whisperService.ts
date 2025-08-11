@@ -2,6 +2,7 @@ import * as FileSystem from 'expo-file-system';
 import { Platform } from 'react-native';
 import { AudioFile } from '@/types/audio';
 import { AudioStorageService } from './audioStorage';
+import logger from '@/utils/logger';
 
 interface WhisperResponse {
   text: string;
@@ -35,7 +36,7 @@ interface TranscriptionResult {
 
 export class WhisperService {
   static async safeTranscribe(file: AudioFile, apiKey: string): Promise<TranscriptionResult> {
-    console.log('🔍 Starting transcription for:', file.name);
+    logger.log('🔍 Starting transcription for:', file.name);
     
     // Validate file
     if (!file?.uri || !file?.name || !file?.fileSize) {
@@ -56,9 +57,9 @@ export class WhisperService {
         fileBlob = await response.blob();
         fileName = file.name;
       }
-      console.log('✅ File prepared:', fileName, fileBlob.size, 'bytes');
+      logger.log('✅ File prepared:', fileName, fileBlob.size, 'bytes');
     } catch (error) {
-      console.error('❌ Failed to prepare file:', error);
+      logger.error('❌ Failed to prepare file:', error);
       throw new Error('Failed to prepare file for upload');
     }
 
@@ -70,7 +71,7 @@ export class WhisperService {
     formData.append('temperature', '0');
     // Note: Removed language and prompt to avoid interference
 
-    console.log('📡 Calling Whisper API...');
+    logger.log('📡 Calling Whisper API...');
     
     try {
       const response = await fetch('https://api.openai.com/v1/audio/transcriptions', {
@@ -83,12 +84,12 @@ export class WhisperService {
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('❌ Whisper API error:', response.status, errorText);
+        logger.error('❌ Whisper API error:', response.status, errorText);
         throw new Error(`Whisper API error: ${response.status}`);
       }
 
       const result: WhisperResponse = await response.json();
-      console.log('📥 Whisper response received:', {
+      logger.log('📥 Whisper response received:', {
         hasText: !!result?.text,
         textLength: result?.text?.length || 0,
         hasSegments: !!result?.segments,
@@ -105,7 +106,7 @@ export class WhisperService {
       // Check for prompt injection
       if (result.text.includes('Include all spoken content') || 
           result.text.includes('Transcribe the complete audio')) {
-        console.error('❌ Prompt injection detected in response');
+        logger.error('❌ Prompt injection detected in response');
         throw new Error('Transcription failed - received prompt text instead of speech content');
       }
 
@@ -136,7 +137,7 @@ export class WhisperService {
         duration: result.duration || file.duration || 0,
       };
 
-      console.log('✅ Transcription completed:', {
+      logger.log('✅ Transcription completed:', {
         segmentCount: transcriptionResult.segments.length,
         textLength: transcriptionResult.fullText.length,
         duration: transcriptionResult.duration
@@ -145,7 +146,7 @@ export class WhisperService {
       return transcriptionResult;
 
     } catch (error) {
-      console.error('❌ Transcription failed:', error);
+      logger.error('❌ Transcription failed:', error);
       throw error;
     }
   }

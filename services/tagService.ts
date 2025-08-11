@@ -1,5 +1,6 @@
 import { Tag } from '@/types/tag';
 import { StorageService } from './storageService';
+import logger from '@/utils/logger';
 
 export class TagService {
   private static readonly STORAGE_KEY = 'tags';
@@ -34,7 +35,7 @@ export class TagService {
       const tags: Tag[] = JSON.parse(tagsJson);
       return tags.sort((a, b) => a.name.localeCompare(b.name));
     } catch (error) {
-      console.error('Failed to get tags:', error);
+      logger.error('Failed to get tags:', error);
       return [];
     }
   }
@@ -67,10 +68,10 @@ export class TagService {
       const updatedTags = [...existingTags, newTag];
       await StorageService.setItem(this.STORAGE_KEY, JSON.stringify(updatedTags));
       
-      console.log('✅ Tag created:', newTag.name);
+      logger.log('✅ Tag created:', newTag.name);
       return newTag;
     } catch (error) {
-      console.error('Failed to create tag:', error);
+      logger.error('Failed to create tag:', error);
       throw error;
     }
   }
@@ -81,9 +82,9 @@ export class TagService {
       const updatedTags = tags.filter(t => t.id !== tagId);
       await StorageService.setItem(this.STORAGE_KEY, JSON.stringify(updatedTags));
       
-      console.log('✅ Tag deleted:', tagId);
+      logger.log('✅ Tag deleted:', tagId);
     } catch (error) {
-      console.error('Failed to delete tag:', error);
+      logger.error('Failed to delete tag:', error);
       throw error;
     }
   }
@@ -124,10 +125,10 @@ export class TagService {
       
       await StorageService.setItem(this.STORAGE_KEY, JSON.stringify(updatedTags));
       
-      console.log('✅ Tag renamed:', updatedTag.name);
+      logger.log('✅ Tag renamed:', updatedTag.name);
       return updatedTag;
     } catch (error) {
-      console.error('Failed to rename tag:', error);
+      logger.error('Failed to rename tag:', error);
       throw error;
     }
   }
