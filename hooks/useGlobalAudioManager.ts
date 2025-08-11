@@ -1,10 +1,11 @@
 import { useRef, useCallback } from 'react';
-import logger from '@/utils/logger';
+import { Platform } from 'react-native';
+import logger from '../utils/logger';
 
 // Global audio manager to ensure only one audio plays at a time
-class GlobalAudioManager {
+export class GlobalAudioManager {
   private static instance: GlobalAudioManager;
-  private currentAudio: HTMLAudioElement | null = null;
+  private currentAudio: any | null = null;
   private currentFileId: string | null = null;
 
   static getInstance(): GlobalAudioManager {
@@ -16,29 +17,37 @@ class GlobalAudioManager {
 
   stopAll(): void {
     logger.log('🛑 GlobalAudioManager: Stopping all audio');
-    
+
     // Stop our tracked audio
     if (this.currentAudio) {
       logger.log('  - Stopping tracked audio for file:', this.currentFileId);
-      this.currentAudio.pause();
-      this.currentAudio.currentTime = 0;
-    }
-    
-    // Stop ALL audio elements on the page
-    const allAudioElements = document.querySelectorAll('audio');
-    allAudioElements.forEach((audio, index) => {
-      if (!audio.paused) {
-        logger.log(`  - Force stopping audio element ${index + 1}`);
-        audio.pause();
-        audio.currentTime = 0;
+      if (typeof this.currentAudio.pause === 'function') {
+        this.currentAudio.pause();
       }
-    });
-    
+      if (typeof this.currentAudio.currentTime === 'number') {
+        this.currentAudio.currentTime = 0;
+      } else if (typeof this.currentAudio.setPositionAsync === 'function') {
+        this.currentAudio.setPositionAsync(0);
+      }
+    }
+
+    // Stop ALL audio elements on the page (web only)
+    if (Platform.OS === 'web' && typeof document !== 'undefined') {
+      const allAudioElements = document.querySelectorAll('audio');
+      allAudioElements.forEach((audio, index) => {
+        if (!audio.paused) {
+          logger.log(`  - Force stopping audio element ${index + 1}`);
+          audio.pause();
+          audio.currentTime = 0;
+        }
+      });
+    }
+
     this.currentAudio = null;
     this.currentFileId = null;
   }
 
-  setCurrentAudio(audio: HTMLAudioElement, fileId: string): void {
+  setCurrentAudio(audio: any, fileId: string): void {
     logger.log('🎵 GlobalAudioManager: Setting current audio for file:', fileId);
     
     // Stop any existing audio first
@@ -64,7 +73,7 @@ export function useGlobalAudioManager() {
     managerRef.current.stopAll();
   }, []);
 
-  const setCurrentAudio = useCallback((audio: HTMLAudioElement, fileId: string) => {
+  const setCurrentAudio = useCallback((audio: any, fileId: string) => {
     managerRef.current.setCurrentAudio(audio, fileId);
   }, []);
 

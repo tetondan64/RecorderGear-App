@@ -502,11 +502,13 @@ export default function FileCard({
   };
 
   useEffect(() => {
+    if (Platform.OS !== 'web') return;
+
     if (isProgressDragging) {
       const handleGlobalMouseUp = () => {
         setIsProgressDragging(false);
       };
-      
+
       const handleGlobalMouseMove = (event: MouseEvent) => {
         if (isProgressDragging && file.duration) {
           const progressContainer = document.querySelector(`[data-progress-${file.id}]`);
@@ -516,16 +518,16 @@ export default function FileCard({
             const progressWidth = rect.width;
             const clickPercentage = clickX / progressWidth;
             const newTime = clickPercentage * file.duration;
-            
+
             setLocalCurrentTime(newTime);
             onSeek?.(file.id, newTime);
           }
         }
       };
-      
+
       document.addEventListener('mouseup', handleGlobalMouseUp);
       document.addEventListener('mousemove', handleGlobalMouseMove);
-      
+
       return () => {
         document.removeEventListener('mouseup', handleGlobalMouseUp);
         document.removeEventListener('mousemove', handleGlobalMouseMove);

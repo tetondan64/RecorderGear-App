@@ -1,5 +1,5 @@
 import React, { useState, forwardRef, useImperativeHandle, useRef, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Platform } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { Play, Pause, SkipBack, SkipForward } from 'lucide-react-native';
 import { AudioPlayerState } from '@/types/transcript';
@@ -212,6 +212,8 @@ const AudioPlayerModule = forwardRef<AudioPlayerRef, AudioPlayerModuleProps>(({
 
   // Add global mouse up listener to handle mouse up outside the progress bar
   useEffect(() => {
+    if (Platform.OS !== 'web') return;
+
     if (isDragging) {
       const handleGlobalMouseUp = () => setIsDragging(false);
       const handleGlobalMouseMove = (event: MouseEvent) => {
@@ -223,17 +225,17 @@ const AudioPlayerModule = forwardRef<AudioPlayerRef, AudioPlayerModuleProps>(({
             const progressWidth = rect.width;
             const clickPercentage = clickX / progressWidth;
             const newTime = clickPercentage * playerState.duration;
-            
+
             audioRef.current.currentTime = newTime;
             setPlayerState(prev => ({ ...prev, currentTime: newTime }));
             onSeek?.(newTime);
           }
         }
       };
-      
+
       document.addEventListener('mouseup', handleGlobalMouseUp);
       document.addEventListener('mousemove', handleGlobalMouseMove);
-      
+
       return () => {
         document.removeEventListener('mouseup', handleGlobalMouseUp);
         document.removeEventListener('mousemove', handleGlobalMouseMove);
