@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useRef, useCallback, ReactNode, useEffect } from 'react';
-import { Platform } from 'react-native';
+
 import { StorageService } from '@/services/storageService';
 
 interface SummaryStyle {
@@ -161,13 +161,13 @@ export function SummaryStylesProvider({ children }: ProviderProps) {
           const parsed: SummaryStyle[] = JSON.parse(data);
           setStyles(parsed);
         } catch (parseErr) {
-          console.error('Failed to parse summary styles:', parseErr);
+
           const now = Date.now();
           const seeded = DEFAULT_STYLES.map(s => ({ ...s, updatedAt: now }));
           setStyles(seeded);
           persist(seeded);
           emit('seed');
-          await StorageService.removeItem(STORAGE_KEY);
+
         }
       } else {
         const now = Date.now();
@@ -184,6 +184,14 @@ export function SummaryStylesProvider({ children }: ProviderProps) {
       setLoading(false);
     }
   }, [emit, persist]);
+
+  useEffect(() => {
+    return () => {
+      if (writeTimeoutRef.current) {
+        clearTimeout(writeTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const list = useCallback(() => {
     return [...styles].sort((a, b) => b.updatedAt - a.updatedAt);
