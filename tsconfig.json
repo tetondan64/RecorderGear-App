@@ -3,8 +3,11 @@
   "compilerOptions": {
     "strict": true,
     "paths": {
-      "@/*": ["./*"]
-    }
+      "@/*": [
+        "./*"
+      ]
+    },
+    "jsx": "react-jsx"
   },
   "include": [
     "**/*.ts",
