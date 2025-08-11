@@ -1,17 +1,6 @@
-import { Folder } from '@/types/folder';
+import { Folder, FolderEvent } from '@/types/folder';
 import { RecordingsStore } from '@/data/recordingsStore';
 import { FolderService } from '@/services/folderService';
-
-export interface FolderEvent {
-  type: 'folders_changed';
-  payload: {
-    op: 'create' | 'rename' | 'move' | 'delete';
-    id: string;
-    parentId?: string | null;
-    timestamp: number;
-    version: number;
-  };
-}
 
 export interface FolderWithCounts extends Folder {
   subfolderCount: number;
@@ -299,5 +288,3 @@ export class FoldersAdapter {
     }
   }
 }
-
-export { FoldersAdapter }

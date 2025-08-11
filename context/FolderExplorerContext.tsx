@@ -1,7 +1,7 @@
 import React, { createContext, useContext, ReactNode } from 'react';
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Folder } from '@/types/folder';
-import { FoldersAdapter, FolderEvent, FolderWithCounts } from '@/services/foldersAdapter';
+import { Folder, FolderEvent } from '@/types/folder';
+import { FoldersAdapter, FolderWithCounts } from '@/services/foldersAdapter';
 
 interface OptimisticFolder extends Folder {
   tempId: string;

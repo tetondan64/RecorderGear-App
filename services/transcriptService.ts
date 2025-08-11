@@ -30,7 +30,7 @@ export class TranscriptService {
     }
   }
 
-  static async storeTranscriptWithVerification(transcriptId: string, data: any): Promise<boolean> {
+  static async storeTranscriptWithVerification(transcriptId: string, data: Transcript): Promise<boolean> {
     const maxRetries = 3;
     const retryDelay = 200;
     
@@ -124,7 +124,7 @@ export class TranscriptService {
     return false;
   }
 
-  static async storeTranscript(transcriptId: string, data: any): Promise<boolean> {
+  static async storeTranscript(transcriptId: string, data: Transcript): Promise<boolean> {
     try {
       return await this.storeTranscriptWithVerification(transcriptId, data);
     } catch (error) {
@@ -199,7 +199,9 @@ export class TranscriptService {
       if (!transcript?.segments || !Array.isArray(transcript.segments)) {
         console.log('⚠️ Retrieved transcript segments are null or missing.');
       } else {
-        const validSegments = transcript.segments.filter(s => s && typeof s.text === 'string' && s.text.trim().length > 0);
+        const validSegments = transcript.segments.filter(
+          (s: TranscriptSegment) => s && typeof s.text === 'string' && s.text.trim().length > 0
+        );
         console.log('✅ Valid segments count:', validSegments.length);
         if (validSegments.length !== transcript.segments.length) {
           console.log('⚠️ Some segments have invalid text');

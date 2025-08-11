@@ -2,6 +2,7 @@ import { Platform } from 'react-native';
 import { AudioFile } from '@/types/audio';
 import { Tag } from '@/types/tag';
 import { Folder } from '@/types/folder';
+import { StoreEvent } from '@/types/store';
 import { AudioStorageService } from '@/services/audioStorage';
 import { FolderService } from '@/services/folderService';
 import { StorageService } from '@/services/storageService';
@@ -11,7 +12,7 @@ const TAGS_KEY = 'rg.tags.v1';
 
 // Store change listeners
 type StoreChangeListener = () => void;
-type StoreChangeListenerWithEvent = (event?: any) => void;
+type StoreChangeListenerWithEvent<T extends StoreEvent = StoreEvent> = (event?: T) => void;
 const storeChangeListeners: StoreChangeListener[] = [];
 const storeChangeListenersWithEvent: StoreChangeListenerWithEvent[] = [];
 
@@ -42,7 +43,7 @@ export class RecordingsStore {
     return Date.now().toString() + '_' + Math.random().toString(36).substring(2, 15);
   }
 
-  static notifyStoreChanged(fromBroadcast: boolean = false, event?: any): void {
+  static notifyStoreChanged(fromBroadcast: boolean = false, event?: StoreEvent): void {
     // Broadcast to other tabs/windows on web platform
     if (Platform.OS === 'web' && typeof window !== 'undefined' && typeof window.BroadcastChannel !== 'undefined' && !fromBroadcast && syncChannel && event) {
       try {
@@ -71,10 +72,10 @@ export class RecordingsStore {
     };
   }
 
-  static addStoreChangeListenerWithEvent(listener: StoreChangeListenerWithEvent): () => void {
-    storeChangeListenersWithEvent.push(listener);
+  static addStoreChangeListenerWithEvent<T extends StoreEvent>(listener: StoreChangeListenerWithEvent<T>): () => void {
+    storeChangeListenersWithEvent.push(listener as StoreChangeListenerWithEvent);
     return () => {
-      const index = storeChangeListenersWithEvent.indexOf(listener);
+      const index = storeChangeListenersWithEvent.indexOf(listener as StoreChangeListenerWithEvent);
       if (index > -1) {
         storeChangeListenersWithEvent.splice(index, 1);
       }

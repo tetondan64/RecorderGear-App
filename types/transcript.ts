@@ -6,13 +6,16 @@ export interface TranscriptSegment {
   confidence?: number;
 }
 
-export interface Transcript {
-  id: string;
-  fileId: string;
+export interface TranscriptPayload {
   segments: TranscriptSegment[];
   fullText: string;
   language?: string;
   duration?: number;
+}
+
+export interface Transcript extends TranscriptPayload {
+  id: string;
+  fileId: string;
   createdAt: string;
 }
 
