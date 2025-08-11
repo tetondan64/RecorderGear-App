@@ -1,5 +1,5 @@
 import React, { createContext, useContext, ReactNode } from 'react';
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { Folder } from '@/types/folder';
 import { FoldersAdapter, FolderWithCounts } from '@/services/foldersAdapter';
 import { FolderEvent } from '@/types/folder';
@@ -280,7 +280,7 @@ export function FolderExplorerProvider({ parentId, children }: FolderExplorerPro
     };
   }, []);
 
-  const contextValue: FolderExplorerContextType = {
+  const contextValue: FolderExplorerContextType = useMemo(() => ({
     parentId,
     items,
     loading,
@@ -289,7 +289,16 @@ export function FolderExplorerProvider({ parentId, children }: FolderExplorerPro
     addOptimisticFolder,
     replaceOptimisticFolder,
     removeOptimisticFolder,
-  };
+  }), [
+    parentId,
+    items,
+    loading,
+    error,
+    refetch,
+    addOptimisticFolder,
+    replaceOptimisticFolder,
+    removeOptimisticFolder,
+  ]);
 
   return (
     <FolderExplorerContext.Provider value={contextValue}>
