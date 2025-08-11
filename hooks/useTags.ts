@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Tag, TagFilter } from '@/types/tag';
 import { TagService } from '@/services/tagService';
 import { RecordingsStore } from '@/data/recordingsStore';
+import logger from '@/utils/logger';
 
 export function useTags() {
   const [tags, setTags] = useState<Tag[]>([]);
@@ -21,7 +22,7 @@ export function useTags() {
       setTags(allTags);
     } catch (err) {
       setError('Failed to load tags');
-      console.error('Error loading tags:', err);
+      logger.error('Error loading tags:', err);
     } finally {
       setLoading(false);
     }

@@ -1,11 +1,18 @@
 import { Tabs } from 'expo-router';
 import { useState } from 'react';
-import { StyleSheet, View, TouchableOpacity, Text } from 'react-native';
+import {
+  StyleSheet,
+  View,
+  TouchableOpacity,
+  type TouchableOpacityProps,
+  Text,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
 import { FileText, Mic, Bot, Menu } from 'lucide-react-native';
 import RightDrawer from '@/components/RightDrawer';
+import type { BottomTabBarButtonProps } from '@react-navigation/bottom-tabs';
 
 export default function TabLayout() {
   const [isDrawerVisible, setIsDrawerVisible] = useState(false);
@@ -32,8 +39,8 @@ export default function TabLayout() {
             height: 90 + insets.bottom,
             paddingBottom: 20 + insets.bottom,
             paddingTop: 15,
-            borderTopLeftRadius: 20,
-            borderTopRightRadius: 20,
+            borderTopLeftRadius: 0,
+            borderTopRightRadius: 0,
             overflow: 'hidden',
           },
         }}>
@@ -47,8 +54,11 @@ export default function TabLayout() {
           name="record"
           options={{
             title: '',
-            tabBarButton: (props) => (
-              <TouchableOpacity {...props} style={styles.recordButtonWrapper}>
+            tabBarButton: (props: BottomTabBarButtonProps) => (
+              <TouchableOpacity
+                {...(props as unknown as TouchableOpacityProps)}
+                style={styles.recordButtonWrapper}
+              >
                 <View style={styles.recordButton}>
                   <Mic size={20} color="#fff" strokeWidth={1.5} />
                   <Text style={styles.recordButtonText}>Record</Text>
@@ -80,17 +90,18 @@ export default function TabLayout() {
           name="more"
           options={{
             title: '',
-            tabBarButton: (props) => (
-              <TouchableOpacity 
+            tabBarButton: (props: BottomTabBarButtonProps) => (
+              <TouchableOpacity
+                {...(props as unknown as TouchableOpacityProps)}
                 style={styles.hamburgerContainer}
                 onPress={() => setIsDrawerVisible(true)}
                 accessibilityRole="button"
                 accessibilityLabel="More"
               >
                 <BlurView intensity={18} style={styles.hamburgerButton}>
-                  <Menu 
-                    size={24} 
-                    color="rgba(255, 255, 255, 0.7)" 
+                  <Menu
+                    size={24}
+                    color="rgba(255, 255, 255, 0.7)"
                     strokeWidth={1.5}
                   />
                 </BlurView>

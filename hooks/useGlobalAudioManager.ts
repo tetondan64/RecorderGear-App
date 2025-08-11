@@ -1,4 +1,5 @@
 import { useRef, useCallback } from 'react';
+import logger from '@/utils/logger';
 
 // Global audio manager to ensure only one audio plays at a time
 class GlobalAudioManager {
@@ -14,11 +15,11 @@ class GlobalAudioManager {
   }
 
   stopAll(): void {
-    console.log('🛑 GlobalAudioManager: Stopping all audio');
+    logger.log('🛑 GlobalAudioManager: Stopping all audio');
     
     // Stop our tracked audio
     if (this.currentAudio) {
-      console.log('  - Stopping tracked audio for file:', this.currentFileId);
+      logger.log('  - Stopping tracked audio for file:', this.currentFileId);
       this.currentAudio.pause();
       this.currentAudio.currentTime = 0;
     }
@@ -27,7 +28,7 @@ class GlobalAudioManager {
     const allAudioElements = document.querySelectorAll('audio');
     allAudioElements.forEach((audio, index) => {
       if (!audio.paused) {
-        console.log(`  - Force stopping audio element ${index + 1}`);
+        logger.log(`  - Force stopping audio element ${index + 1}`);
         audio.pause();
         audio.currentTime = 0;
       }
@@ -38,7 +39,7 @@ class GlobalAudioManager {
   }
 
   setCurrentAudio(audio: HTMLAudioElement, fileId: string): void {
-    console.log('🎵 GlobalAudioManager: Setting current audio for file:', fileId);
+    logger.log('🎵 GlobalAudioManager: Setting current audio for file:', fileId);
     
     // Stop any existing audio first
     this.stopAll();

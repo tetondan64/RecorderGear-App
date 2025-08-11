@@ -1,6 +1,7 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { AudioFile } from '@/types/audio';
 import { useGlobalAudioManager } from '@/hooks/useGlobalAudioManager';
+import logger from '@/utils/logger';
 
 interface AudioPlayerState {
   currentFileId: string | null;
@@ -31,7 +32,7 @@ export function useAudioPlayer(files: AudioFile[] = []) {
       const currentFile = files.find(f => f.id === playerState.currentFileId);
       if (currentFile && currentFile.uri !== audioRef.current.src) {
         // Blob URL has changed, update the audio source
-        console.log('🔄 Updating audio source for file:', currentFile.name);
+        logger.log('🔄 Updating audio source for file:', currentFile.name);
         loadAudioFile(currentFile);
       }
     }
@@ -66,7 +67,7 @@ export function useAudioPlayer(files: AudioFile[] = []) {
             startTimeTracking();
             setPlayerState(prev => ({ ...prev, isPlaying: true }));
           }).catch(error => {
-            console.error('Audio playback error:', error);
+            logger.error('Audio playback error:', error);
           });
           shouldPlayAfterLoadRef.current = false;
         }
@@ -149,7 +150,7 @@ export function useAudioPlayer(files: AudioFile[] = []) {
     // Find the file from the files array if not provided
     const targetFile = audioFile || files.find(f => f.id === fileId);
     if (!targetFile) {
-      console.error('File not found for playback:', fileId);
+      logger.error('File not found for playback:', fileId);
       return;
     }
 
@@ -186,7 +187,7 @@ export function useAudioPlayer(files: AudioFile[] = []) {
         }
       }
     } catch (error) {
-      console.error('Audio playback error:', error);
+      logger.error('Audio playback error:', error);
       shouldPlayAfterLoadRef.current = false; // Clear flag on error
     }
   }, [stopAllAudio, files, playerState.currentFileId, playerState.isPlaying, stopTimeTracking, loadAudioFile, startTimeTracking, setCurrentAudio]);
@@ -231,7 +232,7 @@ export function useAudioPlayer(files: AudioFile[] = []) {
           currentTime: 0,
           currentFileId: null,
         }));
-        console.log('🛑 Stopped playback for deleted file:', fileId);
+        logger.log('🛑 Stopped playback for deleted file:', fileId);
       }
     }, [playerState.currentFileId, playerState.isPlaying, stopTimeTracking]),
   };

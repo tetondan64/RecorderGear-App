@@ -2,6 +2,7 @@ import * as FileSystem from 'expo-file-system';
 import { Platform } from 'react-native';
 import { AudioFile, AudioFileMetadata } from '@/types/audio';
 import { StorageService } from './storageService';
+import logger from '@/utils/logger';
 
 const STORAGE_KEY = 'audio_files';
 const AUDIO_DIR = `${FileSystem.documentDirectory}RecorderGearApp/AudioFiles/`;
@@ -18,16 +19,16 @@ export class AudioStorageService {
         await FileSystem.makeDirectoryAsync(AUDIO_DIR, { intermediates: true });
       }
     } catch (error) {
-      console.error('Failed to initialize audio storage:', error);
+      logger.error('Failed to initialize audio storage:', error);
     }
   }
 
   static async clearAllFiles(): Promise<void> {
     try {
       await StorageService.removeItem(STORAGE_KEY);
-      console.log('⚠️ All audio files cleared from storage');
+      logger.log('⚠️ All audio files cleared from storage');
     } catch (error) {
-      console.error('Failed to clear audio files:', error);
+      logger.error('Failed to clear audio files:', error);
       throw error;
     }
   }
@@ -73,7 +74,7 @@ export class AudioStorageService {
         
         return audioFile;
       } catch (error) {
-        console.error('Failed to create blob URL:', error instanceof Error ? error.message : 'Unknown error');
+        logger.error('Failed to create blob URL:', error instanceof Error ? error.message : 'Unknown error');
         
         // Check for storage quota exceeded error
         if (error instanceof DOMException && error.name === 'QuotaExceededError') {
@@ -112,7 +113,7 @@ export class AudioStorageService {
         
         return audioFile;
       } catch (error) {
-        console.error('Failed to save audio file:', error);
+        logger.error('Failed to save audio file:', error);
         throw new Error('Failed to import file. Please try again.');
       }
     }
@@ -175,7 +176,7 @@ export class AudioStorageService {
         return nameMatch && sizeMatch;
       });
     } catch (error) {
-      console.error('Error checking for duplicates:', error);
+      logger.error('Error checking for duplicates:', error);
       return false;
     }
   }
@@ -192,7 +193,7 @@ export class AudioStorageService {
       
       await StorageService.setItem(STORAGE_KEY, JSON.stringify(filesToStore));
     } catch (error) {
-      console.error('Failed to save file metadata:', error);
+      logger.error('Failed to save file metadata:', error);
       throw error;
     }
   }
@@ -203,7 +204,7 @@ export class AudioStorageService {
       const updatedFiles = [...existingFiles, audioFile];
       await this._saveAllFileMetadata(updatedFiles);
     } catch (error) {
-      console.error('Failed to save file metadata:', error);
+      logger.error('Failed to save file metadata:', error);
       throw error;
     }
   }
@@ -231,7 +232,7 @@ export class AudioStorageService {
       // Sort by import date (newest first)
       return files.sort((a, b) => new Date(b.importDate).getTime() - new Date(a.importDate).getTime());
     } catch (error) {
-      console.error('Failed to get audio files:', error);
+      logger.error('Failed to get audio files:', error);
       return [];
     }
   }
@@ -255,7 +256,7 @@ export class AudioStorageService {
         await this._saveAllFileMetadata(updatedFiles);
       }
     } catch (error) {
-      console.error('Failed to delete file:', error);
+      logger.error('Failed to delete file:', error);
       throw new Error('Failed to delete file. Please try again.');
     }
   }
@@ -265,29 +266,29 @@ export class AudioStorageService {
       const files = await this.getAllFiles();
       return files.find(f => f.id === fileId) || null;
     } catch (error) {
-      console.error('Failed to get file by ID:', error);
+      logger.error('Failed to get file by ID:', error);
       return null;
     }
   }
 
   static async updateFileTranscriptStatus(fileId: string, hasTranscript: boolean): Promise<void> {
     try {
-      console.log(`🔄 Updating transcript status for ${fileId}: ${hasTranscript}`);
+      logger.log(`🔄 Updating transcript status for ${fileId}: ${hasTranscript}`);
       const files = await this.getAllFiles();
-      console.log(`📁 Current files count: ${files.length}`);
+      logger.log(`📁 Current files count: ${files.length}`);
       
       const updatedFiles = files.map(file => 
         file.id === fileId ? { ...file, hasTranscript } : file
       );
       
-      console.log(`📁 Updated files count: ${updatedFiles.length}`);
+      logger.log(`📁 Updated files count: ${updatedFiles.length}`);
       const targetFile = updatedFiles.find(f => f.id === fileId);
-      console.log(`🎯 Target file found:`, !!targetFile, targetFile ? `hasTranscript: ${targetFile.hasTranscript}` : 'not found');
+      logger.log(`🎯 Target file found:`, !!targetFile, targetFile ? `hasTranscript: ${targetFile.hasTranscript}` : 'not found');
       
       await this._saveAllFileMetadata(updatedFiles);
-      console.log(`✅ File transcript status updated successfully`);
+      logger.log(`✅ File transcript status updated successfully`);
     } catch (error) {
-      console.error('Failed to update transcript status:', error);
+      logger.error('Failed to update transcript status:', error);
       throw error;
     }
   }
@@ -311,7 +312,7 @@ export class AudioStorageService {
       
       return updatedFile;
     } catch (error) {
-      console.error('Failed to update audio file:', error);
+      logger.error('Failed to update audio file:', error);
       throw error;
     }
   }
@@ -369,11 +370,11 @@ export class AudioStorageService {
       
       await this._saveAllFileMetadata(updatedFiles);
       
-      console.log(`✅ File renamed from "${fileToRename.name}" to "${newFileName}"`);
+      logger.log(`✅ File renamed from "${fileToRename.name}" to "${newFileName}"`);
       return updatedFile;
       
     } catch (error) {
-      console.error('Failed to rename file:', error);
+      logger.error('Failed to rename file:', error);
       throw error;
     }
   }

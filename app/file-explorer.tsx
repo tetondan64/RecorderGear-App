@@ -11,6 +11,7 @@ import { FoldersAdapter } from '@/services/foldersAdapter';
 import { AudioFile } from '@/types/audio';
 import { Folder } from '@/types/folder';
 import { RecordingsStore } from '@/data/recordingsStore';
+import logger from '@/utils/logger';
 
 export default function FileExplorerScreen() {
   const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
@@ -28,13 +29,13 @@ export default function FileExplorerScreen() {
     loadRecordingsAndPath();
     
     // Debug: Log what we're loading
-    console.log('🔍 FileExplorer: Loading content for folderId:', currentFolderId);
+    logger.log('🔍 FileExplorer: Loading content for folderId:', currentFolderId);
   }, [currentFolderId]);
 
   // Refresh content when screen comes into focus
   useFocusEffect(
     React.useCallback(() => {
-      console.log('🔄 FileExplorer: Screen focused, refreshing content');
+      logger.log('🔄 FileExplorer: Screen focused, refreshing content');
       loadRecordings(); // Only load recordings here, path is handled by context
     }, [currentFolderId]) // Depend on currentFolderId
   );
@@ -43,7 +44,7 @@ export default function FileExplorerScreen() {
     try {
       setPathLoading(true);
       
-      console.log('🔍 FileExplorer: Starting to load folder content for:', currentFolderId);
+      logger.log('🔍 FileExplorer: Starting to load folder content for:', currentFolderId);
       
       // Load recordings and path for current location
       const [recordingsData, pathData] = await Promise.all([
@@ -51,7 +52,7 @@ export default function FileExplorerScreen() {
         adapter.getPath(currentFolderId)
       ]);
       
-      console.log('🔍 FileExplorer: Loaded data:', {
+      logger.log('🔍 FileExplorer: Loaded data:', {
         recordingsCount: recordingsData.length,
         pathLength: pathData.length
       });
@@ -59,7 +60,7 @@ export default function FileExplorerScreen() {
       setRecordings(recordingsData);
       setFolderPath(pathData);
     } catch (error) {
-      console.error('Failed to load folder content:', error);
+      logger.error('Failed to load folder content:', error);
       Alert.alert('Error', 'Failed to load folder content');
     } finally {
       setRecordingsLoading(false);
@@ -72,7 +73,7 @@ export default function FileExplorerScreen() {
       const recordingsData = await adapter.getRecordingsInFolder(currentFolderId);
       setRecordings(recordingsData);
     } catch (error) {
-      console.error('Failed to load recordings:', error);
+      logger.error('Failed to load recordings:', error);
     }
   };
 

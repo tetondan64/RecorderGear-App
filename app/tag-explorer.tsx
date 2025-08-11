@@ -11,6 +11,7 @@ import ConfirmModal from '@/components/ConfirmModal';
 import SnackBar from '@/components/SnackBar';
 import { RecordingsStore } from '@/data/recordingsStore';
 import { Tag } from '@/types/tag';
+import logger from '@/utils/logger';
 
 interface TagWithCount extends Tag {
   recordingCount: number;
@@ -125,7 +126,7 @@ export default function TagExplorerScreen() {
       const tagsWithCounts = await RecordingsStore.getTagsWithCounts();
       setTags(tagsWithCounts);
     } catch (error) {
-      console.error('Failed to load tags:', error);
+      logger.error('Failed to load tags:', error);
       Alert.alert('Error', 'Failed to load tags');
     } finally {
       setLoading(false);

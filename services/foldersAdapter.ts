@@ -1,17 +1,8 @@
-import { Folder } from '@/types/folder';
+import { Folder, FolderEvent } from '@/types/folder';
+import { StoreEvent } from '@/types/store';
 import { RecordingsStore } from '@/data/recordingsStore';
 import { FolderService } from '@/services/folderService';
-
-export interface FolderEvent {
-  type: 'folders_changed';
-  payload: {
-    op: 'create' | 'rename' | 'move' | 'delete';
-    id: string;
-    parentId?: string | null;
-    timestamp: number;
-    version: number;
-  };
-}
+import logger from '@/utils/logger';
 
 export interface FolderWithCounts extends Folder {
   subfolderCount: number;
@@ -48,13 +39,13 @@ export class FoldersAdapter {
       this.invalidateCache();
     });
     
-    RecordingsStore.addStoreChangeListenerWithEvent((event?: FolderEvent) => {
-      this.notifyListeners(event);
+    RecordingsStore.addStoreChangeListenerWithEvent((event?: StoreEvent) => {
+      this.notifyListeners(event as FolderEvent | undefined);
     });
   }
 
   private invalidateCache(): void {
-    console.log('🗑️ FoldersAdapter: Invalidating all caches');
+    logger.log('🗑️ FoldersAdapter: Invalidating all caches');
     this.allFoldersCache = null;
     this.validMoveTargetsCache = null;
   }
@@ -80,7 +71,7 @@ export class FoldersAdapter {
       },
     };
     
-    console.log('📡 FoldersAdapter emitting event:', event);
+    logger.log('📡 FoldersAdapter emitting event:', event);
     
     // Notify RecordingsStore to trigger cross-tab sync and other listeners
     RecordingsStore.notifyStoreChanged(false, event);
@@ -111,10 +102,10 @@ export class FoldersAdapter {
    */
   async listChildren(parentId: string | null): Promise<FolderWithCounts[]> {
     try {
-      console.log('🔍 FoldersAdapter.listChildren called with parentId:', parentId);
+      logger.log('🔍 FoldersAdapter.listChildren called with parentId:', parentId);
       return await RecordingsStore.getFoldersWithCounts(parentId);
     } catch (error) {
-      console.error('Failed to list folder children:', error);
+      logger.error('Failed to list folder children:', error);
       return [];
     }
   }
@@ -132,7 +123,7 @@ export class FoldersAdapter {
       this.emitEvent('create', newFolder.id, parentId);
       return newFolder;
     } catch (error) {
-      console.error('Failed to create folder:', error);
+      logger.error('Failed to create folder:', error);
       throw error;
     }
   }
@@ -146,7 +137,7 @@ export class FoldersAdapter {
       this.emitEvent('rename', id, renamedFolder.parentId);
       return renamedFolder;
     } catch (error) {
-      console.error('Failed to rename folder:', error);
+      logger.error('Failed to rename folder:', error);
       throw error;
     }
   }
@@ -160,7 +151,7 @@ export class FoldersAdapter {
       this.emitEvent('move', id, newParentId);
       return movedFolder;
     } catch (error) {
-      console.error('Failed to move folder:', error);
+      logger.error('Failed to move folder:', error);
       throw error;
     }
   }
@@ -177,7 +168,7 @@ export class FoldersAdapter {
       await RecordingsStore.deleteFolder(id);
       this.emitEvent('delete', id, parentId);
     } catch (error) {
-      console.error('Failed to remove folder:', error);
+      logger.error('Failed to remove folder:', error);
       throw error;
     }
   }
@@ -189,7 +180,7 @@ export class FoldersAdapter {
     try {
       return await RecordingsStore.getFolderPath(id);
     } catch (error) {
-      console.error('Failed to get folder path:', error);
+      logger.error('Failed to get folder path:', error);
       return [];
     }
   }
@@ -201,7 +192,7 @@ export class FoldersAdapter {
     try {
       return await FolderService.getFolderDepth(id);
     } catch (error) {
-      console.error('Failed to get folder depth:', error);
+      logger.error('Failed to get folder depth:', error);
       return 0;
     }
   }
@@ -216,7 +207,7 @@ export class FoldersAdapter {
         folder.name.toLowerCase() === name.toLowerCase()
       );
     } catch (error) {
-      console.error('Failed to check folder existence:', error);
+      logger.error('Failed to check folder existence:', error);
       return false;
     }
   }
@@ -229,11 +220,11 @@ export class FoldersAdapter {
       // Check cache first
       const now = Date.now();
       if (this.allFoldersCache && (now - this.allFoldersCache.timestamp) < FoldersAdapter.CACHE_DURATION_MS) {
-        console.log('🚀 FoldersAdapter: Using cached all folders');
+        logger.log('🚀 FoldersAdapter: Using cached all folders');
         return this.allFoldersCache.data;
       }
       
-      console.log('🔄 FoldersAdapter: Cache miss, fetching fresh all folders');
+      logger.log('🔄 FoldersAdapter: Cache miss, fetching fresh all folders');
       const folders = await RecordingsStore.getFolders();
       
       // Cache the result
@@ -244,7 +235,7 @@ export class FoldersAdapter {
       
       return folders;
     } catch (error) {
-      console.error('Failed to get all folders:', error);
+      logger.error('Failed to get all folders:', error);
       return [];
     }
   }
@@ -256,7 +247,7 @@ export class FoldersAdapter {
     try {
       return await RecordingsStore.getRecordingsInFolder(folderId);
     } catch (error) {
-      console.error('Failed to get recordings in folder:', error);
+      logger.error('Failed to get recordings in folder:', error);
       return [];
     }
   }
@@ -269,11 +260,11 @@ export class FoldersAdapter {
       // Check cache first
       const now = Date.now();
       if (this.validMoveTargetsCache && (now - this.validMoveTargetsCache.timestamp) < FoldersAdapter.CACHE_DURATION_MS) {
-        console.log('🚀 FoldersAdapter: Using cached valid move targets');
+        logger.log('🚀 FoldersAdapter: Using cached valid move targets');
         return this.validMoveTargetsCache.data;
       }
       
-      console.log('🔄 FoldersAdapter: Cache miss, fetching fresh valid move targets');
+      logger.log('🔄 FoldersAdapter: Cache miss, fetching fresh valid move targets');
       const allFolders = await this.getAllFolders();
       const validTargets: Folder[] = [];
       
@@ -294,10 +285,8 @@ export class FoldersAdapter {
       
       return sortedTargets;
     } catch (error) {
-      console.error('Failed to get valid move targets:', error);
+      logger.error('Failed to get valid move targets:', error);
       return [];
     }
   }
 }
-
-export { FoldersAdapter }

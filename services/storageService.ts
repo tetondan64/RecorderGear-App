@@ -1,6 +1,10 @@
 import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Platform } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { get, set, del, keys } from 'idb-keyval';
+import logger from '@/utils/logger';
+
 
 export class StorageService {
   /**
@@ -18,7 +22,7 @@ export class StorageService {
         return await AsyncStorage.getItem(key);
       }
     } catch (error) {
-      console.error('StorageService.getItem error:', error);
+      logger.error('StorageService.getItem error:', error);
       return null;
     }
   }
@@ -31,7 +35,7 @@ export class StorageService {
         await AsyncStorage.setItem(key, value);
       }
     } catch (error) {
-      console.error('StorageService.setItem error:', error);
+      logger.error('StorageService.setItem error:', error);
       throw error;
     }
   }
@@ -44,7 +48,7 @@ export class StorageService {
         await AsyncStorage.removeItem(key);
       }
     } catch (error) {
-      console.error('StorageService.removeItem error:', error);
+      logger.error('StorageService.removeItem error:', error);
       throw error;
     }
   }
@@ -59,7 +63,7 @@ export class StorageService {
         return (await AsyncStorage.getAllKeys()) as string[];
       }
     } catch (error) {
-      console.error('StorageService.getAllKeys error:', error);
+      logger.error('StorageService.getAllKeys error:', error);
       return [];
     }
   }
