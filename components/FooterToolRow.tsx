@@ -58,7 +58,7 @@ const styles = StyleSheet.create({
   },
   toolButton: {
     flex: 1,
-    borderRadius: 0,
+    borderRadius: 12,
     overflow: 'hidden',
     opacity: 0.6, // Disabled state
   },
@@ -72,7 +72,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    borderRadius: 0,
+    borderRadius: 12,
   },
   toolButtonText: {
     fontSize: 14,
