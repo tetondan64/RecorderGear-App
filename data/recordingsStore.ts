@@ -17,10 +17,25 @@ const storeChangeListenersWithEvent: StoreChangeListenerWithEvent[] = [];
 
 // Cross-tab synchronization for web platform
 let syncChannel: BroadcastChannel | null = null;
+let closeChannel: (() => void) | null = null;
 const instanceId = Math.random().toString(36).substring(2, 15);
 
-// Initialize BroadcastChannel for web platform
-if (Platform.OS === 'web' && typeof window !== 'undefined' && typeof window.BroadcastChannel !== 'undefined') {
+/**
+ * Initialize the BroadcastChannel used for cross-tab syncing. This must be
+ * explicitly enabled by calling `RecordingsStore.setCrossTabSyncEnabled(true)`
+ * and should be cleaned up via `RecordingsStore.disableCrossTabSync()` when
+ * syncing is disabled or the application unmounts.
+ */
+function initSyncChannel(): void {
+  if (
+    syncChannel ||
+    Platform.OS !== 'web' ||
+    typeof window === 'undefined' ||
+    typeof window.BroadcastChannel === 'undefined'
+  ) {
+    return;
+  }
+
   try {
     syncChannel = new window.BroadcastChannel('recordings-store-sync');
     syncChannel.onmessage = (event) => {
@@ -30,16 +45,59 @@ if (Platform.OS === 'web' && typeof window !== 'undefined' && typeof window.Broa
         RecordingsStore.notifyStoreChanged(true, event.data.event); // fromBroadcast = true
       }
     };
+    closeChannel = () => {
+      try {
+        if (syncChannel) {
+          syncChannel.onmessage = null;
+          syncChannel.close();
+          syncChannel = null;
+        }
+      } catch (error) {
+        console.warn('Failed to close BroadcastChannel:', error);
+      }
+    };
     console.log('📡 BroadcastChannel initialized for cross-tab sync');
   } catch (error) {
     console.warn('Failed to initialize BroadcastChannel:', error);
   }
 }
 
+/**
+ * Single source of truth for recording-related data and helpers.
+ *
+ * Cross-tab synchronization contract:
+ * - Call `RecordingsStore.setCrossTabSyncEnabled(true)` on startup to
+ *   initialize the BroadcastChannel used for syncing.
+ * - Call `RecordingsStore.disableCrossTabSync()` (or
+ *   `setCrossTabSyncEnabled(false)`) when the app unmounts or syncing is
+ *   otherwise disabled to release channel resources.
+ */
 export class RecordingsStore {
   // Utility functions
   static generateUniqueId(): string {
     return Date.now().toString() + '_' + Math.random().toString(36).substring(2, 15);
+  }
+
+  /**
+   * Enable or disable cross-tab synchronization. Passing `true` initializes
+   * the BroadcastChannel if needed, while `false` will close any existing
+   * channel and remove its message handler.
+   */
+  static setCrossTabSyncEnabled(enabled: boolean): void {
+    if (enabled) {
+      initSyncChannel();
+    } else {
+      this.disableCrossTabSync();
+    }
+  }
+
+  /**
+   * Cleanup function for cross-tab synchronization. Should be invoked when
+   * the application unmounts or when cross-tab syncing is disabled.
+   */
+  static disableCrossTabSync(): void {
+    closeChannel?.();
+    closeChannel = null;
   }
 
   static notifyStoreChanged(fromBroadcast: boolean = false, event?: any): void {
