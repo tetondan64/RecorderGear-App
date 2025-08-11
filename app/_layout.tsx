@@ -1,6 +1,6 @@
-import { useEffect } from 'react';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
+import { SummaryStylesProvider } from '@/context/SummaryStylesContext';
 import { useFrameworkReady } from '@/hooks/useFrameworkReady';
 
 export default function RootLayout() {
@@ -8,9 +8,11 @@ export default function RootLayout() {
 
   return (
     <>
-      <Stack screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="+not-found" />
-      </Stack>
+      <SummaryStylesProvider>
+        <Stack screenOptions={{ headerShown: false }}>
+          <Stack.Screen name="+not-found" />
+        </Stack>
+      </SummaryStylesProvider>
       <StatusBar style="auto" />
     </>
   );
