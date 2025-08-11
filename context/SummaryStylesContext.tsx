@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useRef, useCallback, ReactNode } from 'react';
 import { StorageService } from '@/services/storageService';
+import { uuid } from '@/utils/uuid';
 
 interface SummaryStyle {
   id: string;
@@ -43,10 +44,6 @@ const DEFAULT_STYLES: Array<Omit<SummaryStyle, 'updatedAt'>> = [
   { id: 'key-takeaways', name: 'Key Takeaways', prompt: 'List key takeaways.', builtIn: true },
   { id: 'meeting-minutes', name: 'Meeting Minutes', prompt: 'Summarize as meeting minutes.', builtIn: true },
 ];
-
-function generateId(): string {
-  return Date.now().toString() + '_' + Math.random().toString(36).substring(2, 15);
-}
 
 interface ProviderProps {
   children: ReactNode;
@@ -108,7 +105,7 @@ export function SummaryStylesProvider({ children }: ProviderProps) {
   const create = useCallback(async (style: Omit<SummaryStyle, 'id' | 'updatedAt' | 'builtIn'>) => {
     const newStyle: SummaryStyle = {
       ...style,
-      id: generateId(),
+      id: uuid(),
       builtIn: false,
       updatedAt: Date.now(),
     };
