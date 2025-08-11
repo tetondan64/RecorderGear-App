@@ -6,6 +6,7 @@ import { StoreEvent } from '@/types/store';
 import { AudioStorageService } from '@/services/audioStorage';
 import { FolderService } from '@/services/folderService';
 import { StorageService } from '@/services/storageService';
+import { generateUniqueId } from '@/utils/id';
 
 // Storage key
 const TAGS_KEY = 'rg.tags.v1';
@@ -79,11 +80,6 @@ function initSyncChannel(): void {
  * when tearing down or disabling the feature.
  */
 export class RecordingsStore {
-  // Utility functions
-  static generateUniqueId(): string {
-    return Date.now().toString() + '_' + Math.random().toString(36).substring(2, 15);
-  }
-
   /**
    * Explicitly initialize cross-tab synchronization. Should be called when the
    * application mounts if cross-tab syncing is desired.
@@ -222,7 +218,7 @@ export class RecordingsStore {
 
       const colors = ['#f4ad3d', '#3B82F6', '#10B981', '#EF4444', '#8B5CF6', '#F59E0B', '#06B6D4', '#EC4899'];
       const newTag: Tag = {
-        id: this.generateUniqueId(),
+        id: generateUniqueId(),
         name: trimmedName,
         createdAt: Date.now(),
         color: colors[Math.floor(Math.random() * colors.length)],
