@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { Folder } from '@/types/folder';
 import { FoldersAdapter, FolderWithCounts } from '@/services/foldersAdapter';
 import { FolderEvent } from '@/types/folder';
+import logger from '@/utils/logger';
 
 interface OptimisticFolder extends Folder {
   tempId: string;
@@ -66,7 +67,7 @@ export function FolderExplorerProvider({ parentId, children }: FolderExplorerPro
       setLoading(true);
       setError(null);
 
-      console.log('🔄 FolderExplorerProvider: Refetching folders for parentId:', parentId);
+      logger.log('🔄 FolderExplorerProvider: Refetching folders for parentId:', parentId);
 
       const fetchedFolders = await adapter.listChildren(parentId);
 
@@ -104,12 +105,6 @@ export function FolderExplorerProvider({ parentId, children }: FolderExplorerPro
           );
 
           if (matchingReal) {
-            console.log(
-              '🔄 FolderExplorerProvider: Auto-reconciling optimistic folder:',
-              optimistic.tempId,
-              '→',
-              matchingReal.id
-            );
             return false; // Remove optimistic item
           }
 
@@ -148,7 +143,7 @@ export function FolderExplorerProvider({ parentId, children }: FolderExplorerPro
       
       const errorMessage = err instanceof Error ? err.message : 'Failed to load folders';
       setError(errorMessage);
-      console.error('FolderExplorerProvider: Error loading folders:', err);
+      logger.error('FolderExplorerProvider: Error loading folders:', err);
     } finally {
       if (isMountedRef.current) {
         setLoading(false);
@@ -183,8 +178,6 @@ export function FolderExplorerProvider({ parentId, children }: FolderExplorerPro
       recordingCount: 0,
     };
     
-    console.log('optimistic:add', { tempId, name: name.trim(), parentId });
-    
     setItems(prev => {
       const newItems = [...prev, optimisticFolder];
       return newItems.sort((a, b) => a.name.localeCompare(b.name));
@@ -194,8 +187,6 @@ export function FolderExplorerProvider({ parentId, children }: FolderExplorerPro
   }, [parentId]);
 
   const replaceOptimisticFolder = useCallback((tempId: string, realFolder: FolderWithCounts) => {
-    console.log('local:reconcile', { tempId, realId: realFolder.id, name: realFolder.name });
-    
     setItems(prev => {
       const index = prev.findIndex(item => 'tempId' in item && item.tempId === tempId);
       if (index < 0) return prev;
@@ -209,38 +200,32 @@ export function FolderExplorerProvider({ parentId, children }: FolderExplorerPro
   }, []);
 
   const removeOptimisticFolder = useCallback((tempId: string) => {
-    console.log('optimistic:remove', { tempId });
-    
-    setItems(prev => prev.filter(item => 
+    setItems(prev => prev.filter(item =>
       !('tempId' in item) || item.tempId !== tempId
     ));
   }, []);
 
   const handleFolderEvent = useCallback((event?: FolderEvent) => {
     if (!event) {
-      console.log('🔄 FolderExplorerProvider: Generic folder change event, refetching');
+      logger.log('🔄 FolderExplorerProvider: Generic folder change event, refetching');
       debouncedRefetch();
       return;
     }
 
     // Handle local reconcile event
     if (event.type === 'folders_local_reconcile' && event.payload.tempId && event.payload.real) {
-      console.log('local:reconcile', { tempId: event.payload.tempId, realId: event.payload.real.id });
       replaceOptimisticFolder(event.payload.tempId, event.payload.real as FolderWithCounts);
       return;
     }
 
     const { op, id, parentId: eventParentId } = event.payload;
     
-    console.log('events:create', { op, id, eventParentId, currentParentId: parentId });
-
     // Check if this event affects our current parent
     const affectsCurrentParent =
       eventParentId === parentId || // Direct child operation
       (op === 'move' && items.some(item => 'id' in item && item.id === id)); // Moving away from current parent
 
     if (affectsCurrentParent) {
-      console.log('🎯 FolderExplorerProvider: Event affects current parent');
       if (op === 'delete' && id && eventParentId === parentId) {
         setItems(prev => prev.filter(item => !('id' in item && item.id === id)));
         pendingDeletedIds.current.add(id);
@@ -258,7 +243,6 @@ export function FolderExplorerProvider({ parentId, children }: FolderExplorerPro
         );
 
         if (optimisticItem && 'tempId' in optimisticItem) {
-          console.log('🔄 FolderExplorerProvider: Found matching optimistic folder for reconciliation:', optimisticItem.tempId);
           debouncedRefetch();
           return;
         }
