@@ -1,6 +1,9 @@
 import React, { createContext, useContext, useState, useRef, useCallback, ReactNode, useEffect } from 'react';
+import { Platform } from 'react-native';
 
 import { StorageService } from '@/services/storageService';
+import { SummaryStyle, SummaryStylesChangedEvent } from '@/types/summary';
+import { uuid } from '@/utils/uuid';
 
 
 type Listener = (event: SummaryStylesChangedEvent) => void;
@@ -45,6 +48,35 @@ export function SummaryStylesProvider({ children }: ProviderProps) {
   const syncChannelRef = useRef<BroadcastChannel | null>(null);
   const instanceIdRef = useRef<string>(Math.random().toString(36).substring(2, 15));
 
+  const emit = useCallback(
+    (
+      reason: SummaryStylesChangedEvent['reason'],
+      style?: SummaryStyle,
+      skipBroadcast?: boolean,
+    ) => {
+      const event: SummaryStylesChangedEvent = { reason, style };
+      listenersRef.current.forEach(listener => {
+        try {
+          listener(event);
+        } catch (err) {
+          console.error('Error in summary styles listener:', err);
+        }
+      });
+      if (!skipBroadcast && syncChannelRef.current) {
+        try {
+          syncChannelRef.current.postMessage({
+            type: 'summaryStyles/changed',
+            reason,
+            style,
+            instanceId: instanceIdRef.current,
+          });
+        } catch (err) {
+          console.warn('Failed to broadcast summary styles change:', err);
+        }
+      }
+    },
+    [],
+  );
 
   const refresh = useCallback(async () => {
     try {
@@ -88,7 +120,7 @@ export function SummaryStylesProvider({ children }: ProviderProps) {
         channel.onmessage = async event => {
           if (event.data.instanceId !== instanceIdRef.current && event.data.type === 'summaryStyles/changed') {
             await refresh();
-            emit(event.data.reason, true);
+            emit(event.data.reason, event.data.style, true);
           }
         };
         syncChannelRef.current = channel;
@@ -121,16 +153,14 @@ export function SummaryStylesProvider({ children }: ProviderProps) {
           setStyles(parsed);
         } catch (parseErr) {
 
-          const now = Date.now();
-          const seeded = DEFAULT_STYLES.map(s => ({ ...s, updatedAt: now }));
+          const seeded = DEFAULT_STYLES.map(s => ({ ...s, updatedAt: Date.now() }));
           setStyles(seeded);
           persist(seeded);
           emit('seed');
 
         }
       } else {
-        const now = Date.now();
-        const seeded = DEFAULT_STYLES.map(s => ({ ...s, updatedAt: now }));
+        const seeded = DEFAULT_STYLES.map(s => ({ ...s, updatedAt: Date.now() }));
         setStyles(seeded);
         persist(seeded);
         emit('seed');
