@@ -29,3 +29,9 @@ When no styles are found in storage, the context seeds the following built-in st
 - Action Items
 - Key Takeaways
 - Meeting Minutes
+
+## Rollback Steps
+To revert to the default summary styles if customizations cause issues:
+1. Remove the `"summaryStyles:v1"` key from storage.
+2. Call `hydrate()` to seed the built-in styles again.
+3. Reload consumers of the context so they pick up the restored styles.
