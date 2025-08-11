@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Folder, FolderFilter } from '@/types/folder';
-import { FoldersAdapter, FolderWithCounts, FolderEvent } from '@/services/foldersAdapter';
+import { Folder, FolderFilter, FolderEvent } from '@/types/folder';
+import { FoldersAdapter, FolderWithCounts } from '@/services/foldersAdapter';
 import logger from '@/utils/logger';
 
 export function useFolders() {

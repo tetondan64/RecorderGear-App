@@ -1,18 +1,8 @@
-import { Folder } from '@/types/folder';
+import { Folder, FolderEvent } from '@/types/folder';
+import { StoreEvent } from '@/types/store';
 import { RecordingsStore } from '@/data/recordingsStore';
 import { FolderService } from '@/services/folderService';
 import logger from '@/utils/logger';
-
-export interface FolderEvent {
-  type: 'folders_changed';
-  payload: {
-    op: 'create' | 'rename' | 'move' | 'delete';
-    id: string;
-    parentId?: string | null;
-    timestamp: number;
-    version: number;
-  };
-}
 
 export interface FolderWithCounts extends Folder {
   subfolderCount: number;
@@ -49,8 +39,8 @@ export class FoldersAdapter {
       this.invalidateCache();
     });
     
-    RecordingsStore.addStoreChangeListenerWithEvent((event?: FolderEvent) => {
-      this.notifyListeners(event);
+    RecordingsStore.addStoreChangeListenerWithEvent((event?: StoreEvent) => {
+      this.notifyListeners(event as FolderEvent | undefined);
     });
   }
 
@@ -300,5 +290,3 @@ export class FoldersAdapter {
     }
   }
 }
-
-export { FoldersAdapter }

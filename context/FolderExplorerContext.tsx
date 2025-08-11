@@ -1,7 +1,8 @@
 import React, { createContext, useContext, ReactNode } from 'react';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Folder } from '@/types/folder';
-import { FoldersAdapter, FolderEvent, FolderWithCounts } from '@/services/foldersAdapter';
+import { FoldersAdapter, FolderWithCounts } from '@/services/foldersAdapter';
+import { FolderEvent } from '@/types/folder';
 
 interface OptimisticFolder extends Folder {
   tempId: string;
@@ -240,7 +241,7 @@ export function FolderExplorerProvider({ parentId, children }: FolderExplorerPro
 
     if (affectsCurrentParent) {
       console.log('🎯 FolderExplorerProvider: Event affects current parent');
-      if (op === 'delete' && eventParentId === parentId) {
+      if (op === 'delete' && id && eventParentId === parentId) {
         setItems(prev => prev.filter(item => !('id' in item && item.id === id)));
         pendingDeletedIds.current.add(id);
         debouncedRefetch();
