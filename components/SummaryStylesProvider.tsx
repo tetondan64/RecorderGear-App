@@ -13,6 +13,7 @@ const SummaryStylesContext = createContext<SummaryStylesContextValue | undefined
 
 export function SummaryStylesProvider({ children }: { children: ReactNode }) {
   const [styles, setStylesState] = useState<SummaryStyle[]>([]);
+    // eslint-disable-next-line no-undef
   const writeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const setStyles = (newStyles: SummaryStyle[]) => {
